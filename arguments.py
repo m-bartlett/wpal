@@ -20,21 +20,28 @@ parser.add_argument(
   "--light",
   "-l",
   action='store_true',
-  help="generate light theme instead"
+  help="generate a light theme (the background color is brighter than the foreground colors)"
 )
 
 parser.add_argument(
   "--resize",
   "-z",
   type=int,
-  help="pixel quantity to resize image to before calculating palette"
+  help="maximum pixel quantity to resize image to before computing the palette"
 )
 
 parser.add_argument(
   "--blur-radius",
   "-b",
   type=float,
-  help="radius in pixels to use for box blur before kmeans clustering"
+  help="radius in pixels to use for box blur before computing the palette"
+)
+
+parser.add_argument(
+  "--minimum-contrast",
+  "-C",
+  type=float,
+  help="minimum contrast each foreground color should have with the background color"
 )
 
 parser.add_argument(
@@ -63,7 +70,7 @@ parser.add_argument(
   "-v",
   action='count',
   default=0,
-  help="print extra palette coloration to terminal"
+  help="print extra palette coloration to terminal, supply extra v's for more verbosity"
 )
 
 # parser.add_argument(
@@ -85,3 +92,4 @@ args = parser.parse_args()
 args.iterations = args.iterations or 3
 args.resize = args.resize or 250
 args.blur_radius = args.blur_radius or 0.5
+args.minimum_contrast = args.minimum_contrast or 1.75

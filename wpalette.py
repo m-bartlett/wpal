@@ -46,17 +46,33 @@ pixels = (
 	)
 )
 
-kmeans_cluster_centers, ANSI_indices_sorted_by_neighbor_quantity = kmeans(pixels, args.iterations)
+(
+	kmeans_cluster_centers, ANSI_indices_sorted_by_neighbor_quantity
+) 	= kmeans(pixels, args.iterations)
 
 initial_palette = (
 	constrain_background_colors_to_minimum_distance_from_target(
 		kmeans_cluster_centers,
 		constraints = [
 			{"color":0, "max_distance":10000},
-		    {"color":7, "max_distance":5000},
+	    {"color":7, "max_distance":5000},
 		]
 	)
 )
+
+if args.light:
+	initial_palette[[0,7]] = initial_palette[[7,0]] # Swap white and black, i.e. fg with bg
+
+
+initial_palette = (
+	constrain_contrast_between_colors_and_background(
+		initial_palette,
+		light_background = args.light,
+		minimum_contrast = args.minimum_contrast,
+		verbose = args.verbose > 2
+	)
+)
+
 
 hsv_palette = rgb_palette_to_hsv_palette(initial_palette)
 
@@ -98,8 +114,8 @@ else:
 
 
 if args.light:
-	for palette in palettes:
-		palette[[0,7]] = palette[[7,0]] # Swap white and black, i.e. fg with bg
+
+	middle_index=len(palettes)//2 + (len(palettes)&1)
 
 	color_index=middle_index
 
@@ -139,6 +155,8 @@ saturation_sorted_colors     = colors[color_order]
 saturation_sorted_accents    = accents[color_order]
 # saturation_sorted_colors_fg  = ansi_foregrounds[:8][color_order]
 # saturation_sorted_accents_fg = ansi_foregrounds[8:][color_order]
+
+# exit(0)
 
 # Print shell-declarable strings to stdout for consumption
 for n,c in {

@@ -4,6 +4,9 @@ from util import *
 from PIL import Image, ImageFilter
 from colorsys import hsv_to_rgb, rgb_to_hsv
 
+np.set_printoptions(precision=3, suppress=True)
+
+
 BLACK=np.array([0,0,0])
 WHITE=np.array([255,255,255])
 
@@ -68,6 +71,39 @@ def most_visible_foreground_color(rgb):
     return BLACK
 
 
+# def rgb2ansi_bg(rgb):
+#   return "\x1b[48;2;{0};{1};{2}m".format(*rgb)
+
+
+# def rgb2ansi_fg(rgb):
+#   return "\x1b[38;2;{0};{1};{2}m".format(*rgb)
+
+
+def rgb2hex(rgb):
+  return "#{0:02X}{1:02X}{2:02X}".format(*rgb)
+
+
+def ansi_colorize(message, fg=None, bg=None):
+  if len(fg) > 0: fg = "38;2;{0};{1};{2}".format(*fg.astype(np.uint8))
+  if len(bg) > 0: bg = "48;2;{0};{1};{2}".format(*bg.astype(np.uint8))
+  return f"\x1b[{bg};{fg}m{message}\x1b[0m"
+
+
+def rgb2ansi_colorized_hex(rgb):
+  rgb=rgb.astype(np.uint8)
+  return ansi_colorize(rgb2hex(rgb), fg=most_visible_foreground_color(rgb), bg=rgb)
+
+
+def print_palette_as_ANSI_colors(palette, separator=""):
+  printe(separator.join([rgb2ansi_colorized_hex(rgb) for rgb in palette]))
+
+
+def print_palette_as_foreground_on_background_ANSI_colors(palette, separator=""):
+  colors=palette[1:-1]
+  background = palette[0]
+  printe( separator.join([ansi_colorize(rgb2hex(rgb), fg=rgb, bg=background) for rgb in colors]) )
+
+
 def filter_colors_in_ellipsoid_volume(pixels, ellipsoids=[]):
   for ellipsoid in ellipsoids:
       pixels = pixels[
@@ -83,7 +119,7 @@ def constrain_background_colors_to_minimum_distance_from_target(palette, constra
     for step in range(10):
       distance_from_target_color = ( (palette[color] - ANSI[color])**2 ).sum()
       if distance_from_target_color < constraint_distance: break
-      palette[c] = ((0.9*palette[color]) + (0.1*ANSI[color]))
+      palette[color] = ((0.9*palette[color]) + (0.1*ANSI[color]))
     return palette
 
 
@@ -101,8 +137,6 @@ def get_most_saturated_color_index(hsv_palette):
 def create_gradated_palettes(hsv_palette, value_scalars, saturation_scalars):
   # Create an array that is several duplicates of the original palette with different values
   palettes = np.tile(hsv_palette, [len(value_scalars)+1, 1, 1])
-
-  print(palettes)
 
   for i, value_scalar in enumerate(value_scalars):
     palette = palettes[i]
@@ -130,6 +164,73 @@ def create_gradated_palettes(hsv_palette, value_scalars, saturation_scalars):
   return palettes
 
 
+def constrain_contrast_between_colors_and_background(
+      palette,  # Assumes palette is a uint8 numpy array with shape (8)
+      light_background=False,
+      minimum_contrast=1.7,
+      minimum_error=0.001,
+      max_iterations=100,  # convergence isn't strictly guaranteed, prevent infinite loop
+      verbose=False,
+    ):
+
+  background = palette[0]
+  colors = palette[1:-1]
+  deltas = colors - background
+  magnitudes = np.linalg.norm(deltas, axis=1)
+  gradients = deltas / magnitudes[:, np.newaxis]
+
+  if light_background:
+    _contrast = lambda color: contrast(background, color)
+  else:
+    _contrast = lambda color: contrast(color, background)
+  contrasts = np.apply_along_axis(_contrast, axis=1, arr=colors)
+
+  # contrast function isn't affine, but this is a decent heuristic for a starting part
+  new_magnitudes = (magnitudes / contrasts) * minimum_contrast
+  converge_steps = new_magnitudes.copy()
+  new_contrasts = contrasts.copy()
+  indices_needing_more_contrast = np.arange(colors.shape[0])[contrasts < minimum_contrast]
+
+  for i in range(5):
+    if indices_needing_more_contrast.size < 1:
+      break
+
+    _gradients = gradients[indices_needing_more_contrast]
+    _new_magnitudes = new_magnitudes[indices_needing_more_contrast]
+
+    higher_contrast_colors = (_gradients * _new_magnitudes[:,np.newaxis]) + background
+    higher_contrast_colors = (
+      np.minimum(
+        higher_contrast_colors,
+        np.zeros(higher_contrast_colors.shape)+255
+      )
+    )
+    colors[indices_needing_more_contrast] = higher_contrast_colors
+    new_contrasts = np.apply_along_axis(_contrast, axis=1, arr=higher_contrast_colors)
+
+    undershot_filter = new_contrasts < minimum_contrast
+    indices_undershot = indices_needing_more_contrast[undershot_filter]
+    indices_overshot = indices_needing_more_contrast[~undershot_filter]
+
+    new_magnitudes[indices_undershot] += converge_steps[indices_undershot]
+    new_magnitudes[indices_overshot] -= converge_steps[indices_overshot]
+    converge_steps /= 2
+
+    contrast_unsatisfied_filter = np.abs(new_contrasts - minimum_contrast) > minimum_error
+    indices_needing_more_contrast = indices_needing_more_contrast[contrast_unsatisfied_filter]
+
+    if verbose:
+      printe(f'{i}: ', end='')
+      print_palette_as_foreground_on_background_ANSI_colors(
+        palette.astype(np.uint8),
+        separator=" "
+      )
+      printe(f"new_contrasts: {new_contrasts}")
+      printe(f"indices_needing_more_contrast: {indices_needing_more_contrast}")
+      printe()
+
+  palette[1:-1] = colors
+  return palette
 
 
 class AlternateBufferManager(contextlib.AbstractContextManager):
