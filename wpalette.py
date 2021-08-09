@@ -64,14 +64,14 @@ if args.light:
 	initial_palette[[0,7]] = initial_palette[[7,0]] # Swap white and black, i.e. fg with bg
 
 
-initial_palette = (
-	constrain_contrast_between_colors_and_background(
-		initial_palette,
-		light_background = args.light,
-		minimum_contrast = args.minimum_contrast,
-		verbose = args.verbose > 2
-	)
-)
+# initial_palette = (
+# 	constrain_contrast_between_foreground_and_background_colors(
+# 		initial_palette,
+# 		light_background = args.light,
+# 		minimum_contrast = args.minimum_contrast,
+# 		verbose = args.verbose > 2
+# 	)
+# )
 
 
 hsv_palette = rgb_palette_to_hsv_palette(initial_palette)
@@ -89,6 +89,7 @@ palettes = (
 	)
 )
 
+middle_palette_index = (middle_palette_index:=len(palettes))//2 + (middle_palette_index & 1)
 
 
 # """Sort using deterministic psuedo-random ordering based on file hash"""
@@ -114,45 +115,39 @@ else:
 
 
 if args.light:
-
-	middle_index=len(palettes)//2 + (len(palettes)&1)
-
-	color_index=middle_index
-
-	accents = palettes[1]
-	colors = palettes[middle_index+1].copy()
-	# colors = accents
-	colors[0] = palettes[-1][0]
-
-	# colors = accents.copy()
-	# colors[[0,7]] = palettes[middle_index][[0,7]]
-
-	highlight = accents[highlight_index]
+	bright_colors = palettes[1]
+	base_colors = palettes[middle_palette_index+1].copy()
+	base_colors[0] = palettes[-1][0]
+	highlight = bright_colors[highlight_index]
 	lowlight = palettes[-3][highlight_index]
 
-
-	# colors = palettes[middle_index-1]
-	# accents = palettes[-1]
-	# colors[0], accents[0] = accents[0].copy(), colors[0].copy()
-	# colors[7], accents[7] = accents[7].copy(), colors[7].copy()
-
 else:
-	colors = palettes[2]
-	accents = palettes[-1]
-	highlight = accents[highlight_index]
+	base_colors = palettes[2]
+	bright_colors = palettes[-1]
+	highlight = bright_colors[highlight_index]
 	lowlight = palettes[1][highlight_index]
 
 
-ansi_palette = np.concatenate([colors,accents])
 
-highlight_fg = most_visible_foreground_color(highlight)
-midground = (0.7*colors[0] + 0.3*accents[7]).astype(np.uint8)
+foreground_colors = bright_colors[1:-1]
+background_color = base_colors[0]
+foreground_colors = (
+	constrain_contrast_between_foreground_and_background_colors(
+		foreground_colors = foreground_colors,
+		background_color = background_color,
+		minimum_contrast = args.minimum_contrast,
+		verbose = args.verbose > 2
+	)
+)
+bright_colors[1:-1] = foreground_colors
 
-# ansi_foregrounds=np.apply_along_axis(most_visible_foreground_color, 1, ansi_palette)
-# palette_foregrounds=np.apply_along_axis(most_visible_foreground_color, 2, palettes)
 
-saturation_sorted_colors     = colors[color_order]
-saturation_sorted_accents    = accents[color_order]
+ansi_palette = np.concatenate([base_colors,bright_colors])
+
+midground = (0.7*base_colors[0] + 0.3*bright_colors[7]).astype(np.uint8)
+
+sorted_base_colors   = base_colors[color_order]
+sorted_bright_colors = bright_colors[color_order]
 # saturation_sorted_colors_fg  = ansi_foregrounds[:8][color_order]
 # saturation_sorted_accents_fg = ansi_foregrounds[8:][color_order]
 
@@ -165,12 +160,12 @@ for n,c in {
 				**{ f"color{i}d":c for i,c in enumerate(palettes[1]) },
 				**{ f"color{i}l":c for i,c in enumerate(palettes[2]) },
 				**{ f"color{i}L":c for i,c in enumerate(palettes[3]) },
-				**{ f"color{i+1}s":c for i,c in enumerate(saturation_sorted_colors) },
-				**{ f"color{i+1}S":c for i,c in enumerate(saturation_sorted_accents) },
+				**{ f"color{i+1}s":c for i,c in enumerate(sorted_base_colors) },
+				**{ f"color{i+1}S":c for i,c in enumerate(sorted_bright_colors) },
 				"highlight":highlight,
 				"lowlight":lowlight,
 				"midground":midground,
-				"highlight_fg":highlight_fg,
+				"highlight_fg":most_visible_foreground_color(highlight),
 				# **{ f"color{i}_fg": c for i,c in enumerate(ansi_foregrounds) },
 				# **{ f"color{i}D_fg":c for i,c in enumerate(palette_foregrounds[0]) },
 				# **{ f"color{i}d_fg":c for i,c in enumerate(palette_foregrounds[1]) },
@@ -184,7 +179,7 @@ for n,c in {
 
 
 
-for palette in list(palettes) + [[highlight, lowlight]] + [saturation_sorted_colors, saturation_sorted_accents]:
+for palette in list(palettes) + [[highlight, lowlight]] + [sorted_base_colors, sorted_bright_colors]:
   printe(
     "".join(
       [
@@ -199,7 +194,7 @@ for palette in list(palettes) + [[highlight, lowlight]] + [saturation_sorted_col
 
 
 DELIMITER="   "
-for line in zip([colors,accents], [[lowlight],[highlight]]):
+for line in zip([base_colors,bright_colors], [[lowlight],[highlight]]):
 	printe(
 		" ".join(
 			[

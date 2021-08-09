@@ -79,6 +79,12 @@ def most_visible_foreground_color(rgb):
 #   return "\x1b[38;2;{0};{1};{2}m".format(*rgb)
 
 
+def validate_rgb_palette(palette):
+  palette = np.minimum(palette, np.full(palette.shape, 255, dtype=np.uint8))
+  palette = np.maximum(palette, np.zeros(palette.shape, dtype=np.uint8))
+  return palette
+
+
 def rgb2hex(rgb):
   return "#{0:02X}{1:02X}{2:02X}".format(*rgb)
 
@@ -95,10 +101,12 @@ def rgb2ansi_colorized_hex(rgb):
 
 
 def print_palette_as_ANSI_colors(palette, separator=""):
+  palette = validate_rgb_palette(palette)
   printe(separator.join([rgb2ansi_colorized_hex(rgb) for rgb in palette]))
 
 
 def print_palette_as_foreground_on_background_ANSI_colors(palette, separator=""):
+  palette = validate_rgb_palette(palette)
   colors=palette[1:-1]
   background = palette[0]
   printe( separator.join([ansi_colorize(rgb2hex(rgb), fg=rgb, bg=background) for rgb in colors]) )
@@ -164,48 +172,44 @@ def create_gradated_palettes(hsv_palette, value_scalars, saturation_scalars):
   return palettes
 
 
-def constrain_contrast_between_colors_and_background(
-      palette,  # Assumes palette is a uint8 numpy array with shape (8)
-      light_background=False,
+def constrain_contrast_between_foreground_and_background_colors(
+      *,
+      foreground_colors, # Assumes a uint8 numpy array with shape (6,3)
+      background_color,  # Assumes a uint8 numpy array with shape (1,3)
       minimum_contrast=1.7,
       minimum_error=0.001,
       max_iterations=100,  # convergence isn't strictly guaranteed, prevent infinite loop
       verbose=False,
     ):
 
-  background = palette[0]
-  colors = palette[1:-1]
-  deltas = colors - background
+  deltas = foreground_colors - background_color
   magnitudes = np.linalg.norm(deltas, axis=1)
   gradients = deltas / magnitudes[:, np.newaxis]
 
+  light_background = background_color.mean() > foreground_colors.mean()
+
   if light_background:
-    _contrast = lambda color: contrast(background, color)
+    _contrast = lambda color: contrast(background_color, color)
   else:
-    _contrast = lambda color: contrast(color, background)
-  contrasts = np.apply_along_axis(_contrast, axis=1, arr=colors)
+    _contrast = lambda color: contrast(color, background_color)
+  contrasts = np.apply_along_axis(_contrast, axis=1, arr=foreground_colors)
 
   # contrast function isn't affine, but this is a decent heuristic for a starting part
   new_magnitudes = (magnitudes / contrasts) * minimum_contrast
   converge_steps = new_magnitudes.copy()
   new_contrasts = contrasts.copy()
-  indices_needing_more_contrast = np.arange(colors.shape[0])[contrasts < minimum_contrast]
+  indices_needing_more_contrast = np.arange(foreground_colors.shape[0])[contrasts < minimum_contrast]
 
-  for i in range(5):
+  for i in range(max_iterations):
     if indices_needing_more_contrast.size < 1:
       break
 
     _gradients = gradients[indices_needing_more_contrast]
     _new_magnitudes = new_magnitudes[indices_needing_more_contrast]
 
-    higher_contrast_colors = (_gradients * _new_magnitudes[:,np.newaxis]) + background
-    higher_contrast_colors = (
-      np.minimum(
-        higher_contrast_colors,
-        np.zeros(higher_contrast_colors.shape)+255
-      )
-    )
-    colors[indices_needing_more_contrast] = higher_contrast_colors
+    higher_contrast_colors = (_gradients * _new_magnitudes[:,np.newaxis]) + background_color
+    higher_contrast_colors = validate_rgb_palette(higher_contrast_colors)
+    foreground_colors[indices_needing_more_contrast] = higher_contrast_colors
     new_contrasts = np.apply_along_axis(_contrast, axis=1, arr=higher_contrast_colors)
 
     undershot_filter = new_contrasts < minimum_contrast
@@ -222,15 +226,14 @@ def constrain_contrast_between_colors_and_background(
     if verbose:
       printe(f'{i}: ', end='')
       print_palette_as_foreground_on_background_ANSI_colors(
-        palette.astype(np.uint8),
+        np.concatenate([background_color[np.newaxis,:], foreground_colors]),
         separator=" "
       )
       printe(f"new_contrasts: {new_contrasts}")
       printe(f"indices_needing_more_contrast: {indices_needing_more_contrast}")
       printe()
 
-  palette[1:-1] = colors
-  return palette
+  return foreground_colors
 
 
 class AlternateBufferManager(contextlib.AbstractContextManager):
