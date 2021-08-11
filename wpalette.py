@@ -64,22 +64,26 @@ if args.light:
 	initial_palette[[0,7]] = initial_palette[[7,0]] # Swap white and black, i.e. fg with bg
 
 
-# initial_palette = (
-# 	constrain_contrast_between_foreground_and_background_colors(
-# 		initial_palette,
-# 		light_background = args.light,
-# 		minimum_contrast = args.minimum_contrast,
-# 		verbose = args.verbose > 2
-# 	)
-# )
+if args.minimum_contrast:
+	foreground_colors = initial_palette[1:-1]
+	background_color  = initial_palette[0]
+	higher_contrast_foreground_colors = (
+		constrain_contrast_between_foreground_and_background_colors(
+			foreground_colors = foreground_colors,
+			background_color = background_color,
+			minimum_contrast = args.minimum_contrast,
+			verbose = args.verbose > 2
+		)
+	)
+	initial_palette[1:-1] = higher_contrast_foreground_colors
 
 
 hsv_palette = rgb_palette_to_hsv_palette(initial_palette)
 
 highlight_index = get_most_saturated_color_index(hsv_palette)
 
-value_scalars = [0.9, 0.95, 5/4, 3/2]
-saturation_scalars = [2, 1.5, 1.5, 2.0] if args.light else [1, 1, 1, 1]
+value_scalars = [0.9, 0.95, 1.25, 1.5]
+saturation_scalars = [1.5, 1.25, 1.0, 0.95] if args.light else [1, 1, 1, 1]
 
 palettes = (
 	create_gradated_palettes(
@@ -112,42 +116,40 @@ else:
 	color_order = ANSI_indices_sorted_by_neighbor_quantity
 
 
-
-
 if args.light:
-	bright_colors = palettes[1]
-	base_colors = palettes[middle_palette_index+1].copy()
+	bold_colors = palettes[1]
+	base_colors = palettes[-1].copy()
 	base_colors[0] = palettes[-1][0]
-	highlight = bright_colors[highlight_index]
+	highlight = bold_colors[highlight_index]
 	lowlight = palettes[-3][highlight_index]
 
 else:
 	base_colors = palettes[2]
-	bright_colors = palettes[-1]
-	highlight = bright_colors[highlight_index]
+	bold_colors = palettes[-1]
+	highlight = bold_colors[highlight_index]
 	lowlight = palettes[1][highlight_index]
 
 
+# if args.minimum_contrast:
+# 	foreground_colors = base_colors[1:-1]
+# 	background_color = base_colors[0]
+# 	higher_contrast_foreground_colors = (
+# 		constrain_contrast_between_foreground_and_background_colors(
+# 			foreground_colors = foreground_colors,
+# 			background_color = background_color,
+# 			minimum_contrast = args.minimum_contrast,
+# 			verbose = args.verbose > 2
+# 		)
+# 	)
+# 	foreground_colors = higher_contrast_foreground_colors
 
-foreground_colors = bright_colors[1:-1]
-background_color = base_colors[0]
-foreground_colors = (
-	constrain_contrast_between_foreground_and_background_colors(
-		foreground_colors = foreground_colors,
-		background_color = background_color,
-		minimum_contrast = args.minimum_contrast,
-		verbose = args.verbose > 2
-	)
-)
-bright_colors[1:-1] = foreground_colors
 
+ansi_palette = np.concatenate([base_colors, bold_colors])
 
-ansi_palette = np.concatenate([base_colors,bright_colors])
-
-midground = (0.7*base_colors[0] + 0.3*bright_colors[7]).astype(np.uint8)
+midground = (0.7*base_colors[0] + 0.3*bold_colors[7]).astype(np.uint8)
 
 sorted_base_colors   = base_colors[color_order]
-sorted_bright_colors = bright_colors[color_order]
+sorted_bold_colors = bold_colors[color_order]
 # saturation_sorted_colors_fg  = ansi_foregrounds[:8][color_order]
 # saturation_sorted_accents_fg = ansi_foregrounds[8:][color_order]
 
@@ -161,7 +163,7 @@ for n,c in {
 				**{ f"color{i}l":c for i,c in enumerate(palettes[2]) },
 				**{ f"color{i}L":c for i,c in enumerate(palettes[3]) },
 				**{ f"color{i+1}s":c for i,c in enumerate(sorted_base_colors) },
-				**{ f"color{i+1}S":c for i,c in enumerate(sorted_bright_colors) },
+				**{ f"color{i+1}S":c for i,c in enumerate(sorted_bold_colors) },
 				"highlight":highlight,
 				"lowlight":lowlight,
 				"midground":midground,
@@ -179,7 +181,7 @@ for n,c in {
 
 
 
-for palette in list(palettes) + [[highlight, lowlight]] + [sorted_base_colors, sorted_bright_colors]:
+for palette in list(palettes) + [[highlight, lowlight]] + [sorted_base_colors, sorted_bold_colors]:
   printe(
     "".join(
       [
@@ -194,7 +196,7 @@ for palette in list(palettes) + [[highlight, lowlight]] + [sorted_base_colors, s
 
 
 DELIMITER="   "
-for line in zip([base_colors,bright_colors], [[lowlight],[highlight]]):
+for line in zip([base_colors,bold_colors], [[lowlight],[highlight]]):
 	printe(
 		" ".join(
 			[

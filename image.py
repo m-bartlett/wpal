@@ -18,7 +18,7 @@ ANSI = np.uint8(
       # "rgb(0,40,40)",
       # "rgb(40,40,40)",
       "rgb(15,15,15)",
-      "rgb(220,75,75)",
+      "rgb(188,0,9)",
       "rgb(75,220,75)",
       "rgb(220,180,75)",
       "rgb(75,100,220)",
@@ -82,7 +82,7 @@ def most_visible_foreground_color(rgb):
 def validate_rgb_palette(palette):
   palette = np.minimum(palette, np.full(palette.shape, 255, dtype=np.uint8))
   palette = np.maximum(palette, np.zeros(palette.shape, dtype=np.uint8))
-  return palette
+  return palette.astype(np.uint8)
 
 
 def rgb2hex(rgb):
@@ -178,7 +178,7 @@ def constrain_contrast_between_foreground_and_background_colors(
       background_color,  # Assumes a uint8 numpy array with shape (1,3)
       minimum_contrast=1.7,
       minimum_error=0.001,
-      max_iterations=100,  # convergence isn't strictly guaranteed, prevent infinite loop
+      max_iterations=60,  # convergence isn't guaranteed, prevent infinite loop
       verbose=False,
     ):
 
@@ -192,6 +192,7 @@ def constrain_contrast_between_foreground_and_background_colors(
     _contrast = lambda color: contrast(background_color, color)
   else:
     _contrast = lambda color: contrast(color, background_color)
+
   contrasts = np.apply_along_axis(_contrast, axis=1, arr=foreground_colors)
 
   # contrast function isn't affine, but this is a decent heuristic for a starting part
@@ -208,8 +209,6 @@ def constrain_contrast_between_foreground_and_background_colors(
     _new_magnitudes = new_magnitudes[indices_needing_more_contrast]
 
     higher_contrast_colors = (_gradients * _new_magnitudes[:,np.newaxis]) + background_color
-    higher_contrast_colors = validate_rgb_palette(higher_contrast_colors)
-    foreground_colors[indices_needing_more_contrast] = higher_contrast_colors
     new_contrasts = np.apply_along_axis(_contrast, axis=1, arr=higher_contrast_colors)
 
     undershot_filter = new_contrasts < minimum_contrast
@@ -220,19 +219,22 @@ def constrain_contrast_between_foreground_and_background_colors(
     new_magnitudes[indices_overshot] -= converge_steps[indices_overshot]
     converge_steps /= 2
 
-    contrast_unsatisfied_filter = np.abs(new_contrasts - minimum_contrast) > minimum_error
-    indices_needing_more_contrast = indices_needing_more_contrast[contrast_unsatisfied_filter]
-
     if verbose:
       printe(f'{i}: ', end='')
       print_palette_as_foreground_on_background_ANSI_colors(
-        np.concatenate([background_color[np.newaxis,:], foreground_colors]),
+        np.concatenate([background_color[np.newaxis,:], validate_rgb_palette(higher_contrast_colors)]),
         separator=" "
       )
       printe(f"new_contrasts: {new_contrasts}")
       printe(f"indices_needing_more_contrast: {indices_needing_more_contrast}")
+      printe(f"contrast ratios {contrasts[indices_needing_more_contrast]/new_contrasts}")
       printe()
 
+    contrast_unsatisfied_filter = np.abs(new_contrasts - minimum_contrast) > minimum_error
+    indices_needing_more_contrast = indices_needing_more_contrast[contrast_unsatisfied_filter]
+
+  higher_contrast_colors = validate_rgb_palette(higher_contrast_colors)
+  foreground_colors[indices_needing_more_contrast] = higher_contrast_colors
   return foreground_colors
 
 

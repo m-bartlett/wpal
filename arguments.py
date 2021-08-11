@@ -89,7 +89,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-args.iterations = args.iterations or 3
-args.resize = args.resize or 250
-args.blur_radius = args.blur_radius or 0.5
-args.minimum_contrast = args.minimum_contrast or 1.75
+args.iterations = 3 if args.iterations is None else args.iterations
+args.resize = 250 if args.resize is None else args.resize
+args.blur_radius = 0.5 if args.blur_radius is None else args.blur_radius
+args.minimum_contrast = 1.75 if args.minimum_contrast is None else args.minimum_contrast
