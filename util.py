@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 
-def printe(*args, **kwargs):
+def printerr(*args, **kwargs):
   kwargs['file']=sys.stderr
   print(*args, **kwargs)
 

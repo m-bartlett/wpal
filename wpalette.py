@@ -22,6 +22,9 @@ if args.file:
 else:
 	wp_path = get_current_wallpaper()
 
+if args.verbose > 1:
+	printerr(f"Using wallpaper: {wp_path}")
+
 wp=Image.open(wp_path).convert('RGB')
 if args.blur_radius:
 	wp.thumbnail((args.resize, args.resize), resample=Image.LANCZOS)
@@ -83,7 +86,10 @@ hsv_palette = rgb_palette_to_hsv_palette(initial_palette)
 highlight_index = get_most_saturated_color_index(hsv_palette)
 
 value_scalars = [0.9, 0.95, 1.25, 1.5]
-saturation_scalars = [1.5, 1.25, 1.0, 0.95] if args.light else [1, 1, 1, 1]
+saturation_scalars = (
+	[1.5, 1.25, 1.0, 0.95] if args.light
+	else [1, 1, 1, 1]
+)
 
 palettes = (
 	create_gradated_palettes(
@@ -130,20 +136,6 @@ else:
 	lowlight = palettes[1][highlight_index]
 
 
-# if args.minimum_contrast:
-# 	foreground_colors = base_colors[1:-1]
-# 	background_color = base_colors[0]
-# 	higher_contrast_foreground_colors = (
-# 		constrain_contrast_between_foreground_and_background_colors(
-# 			foreground_colors = foreground_colors,
-# 			background_color = background_color,
-# 			minimum_contrast = args.minimum_contrast,
-# 			verbose = args.verbose > 2
-# 		)
-# 	)
-# 	foreground_colors = higher_contrast_foreground_colors
-
-
 ansi_palette = np.concatenate([base_colors, bold_colors])
 
 midground = (0.7*base_colors[0] + 0.3*bold_colors[7]).astype(np.uint8)
@@ -160,44 +152,40 @@ for n,c in {
 				**{ f"color{i}": c for i,c in enumerate(ansi_palette) },
 				**{ f"color{i}D":c for i,c in enumerate(palettes[0]) },
 				**{ f"color{i}d":c for i,c in enumerate(palettes[1]) },
-				**{ f"color{i}l":c for i,c in enumerate(palettes[2]) },
-				**{ f"color{i}L":c for i,c in enumerate(palettes[3]) },
+				**{ f"color{i}l":c for i,c in enumerate(palettes[3]) },
+				**{ f"color{i}L":c for i,c in enumerate(palettes[4]) },
 				**{ f"color{i+1}s":c for i,c in enumerate(sorted_base_colors) },
 				**{ f"color{i+1}S":c for i,c in enumerate(sorted_bold_colors) },
 				"highlight":highlight,
 				"lowlight":lowlight,
 				"midground":midground,
 				"highlight_fg":most_visible_foreground_color(highlight),
-				# **{ f"color{i}_fg": c for i,c in enumerate(ansi_foregrounds) },
-				# **{ f"color{i}D_fg":c for i,c in enumerate(palette_foregrounds[0]) },
-				# **{ f"color{i}d_fg":c for i,c in enumerate(palette_foregrounds[1]) },
-				# **{ f"color{i}l_fg":c for i,c in enumerate(palette_foregrounds[2]) },
-				# **{ f"color{i}L_fg":c for i,c in enumerate(palette_foregrounds[3]) },
-				# **{ f"color{i+1}s_fg":c for i,c in enumerate(saturation_sorted_colors_fg) },
-				# **{ f"color{i+1}S_fg":c for i,c in enumerate(saturation_sorted_accents_fg) },
 			}.items():
 
 	print("{0}=#{1:02X}{2:02X}{3:02X}".format(n, *c))
 
 
+if args.verbose > 1:
+  with TerminalImagePreview(wp):
+	  input()
 
-for palette in list(palettes) + [[highlight, lowlight]] + [sorted_base_colors, sorted_bold_colors]:
-  printe(
-    "".join(
-      [
-        "\x1b[48;2;{0};{1};{2};38;2;{3};{4};{5}m#{0:02X}{1:02X}{2:02X}\x1b[0m".format(
-          *c,
-          *most_visible_foreground_color(c)
-        )
-        for c in palette
-      ]
-    )
-  )
+# for palette in list(palettes) + [[highlight, lowlight]] + [sorted_base_colors, sorted_bold_colors]:
+#   printerr(
+#     "".join(
+#       [
+#         "\x1b[48;2;{0};{1};{2};38;2;{3};{4};{5}m#{0:02X}{1:02X}{2:02X}\x1b[0m".format(
+#           *c,
+#           *most_visible_foreground_color(c)
+#         )
+#         for c in palette
+#       ]
+#     )
+#   )
 
 
 DELIMITER="   "
 for line in zip([base_colors,bold_colors], [[lowlight],[highlight]]):
-	printe(
+	printerr(
 		" ".join(
 			[
 				"".join(
@@ -214,7 +202,7 @@ for line in zip([base_colors,bold_colors], [[lowlight],[highlight]]):
 # avg_color = pixels.mean(axis=0).astype(int)
 
 # avg_closest_color = accents[np.argmin( ( ( accents[1:-1] - ANSI[1:-1] )**2 ).sum(axis=1) ) + 1]
-# printe(
+# printerr(
 # 	"".join(
 # 		[
 # 	        "\x1b[48;2;{0};{1};{2}m{3}\x1b[0m".format(*c, DELIMITER)

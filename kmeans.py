@@ -1,6 +1,9 @@
 from image import ANSI, np
 
 def kmeans(pixels, iterations=3):
+
+  # For this usage of k-means, k = 8 always as there are 8 ANSI colors to create clusters for
+
   cluster_centers = ANSI.copy()
 
   for i in range(iterations):

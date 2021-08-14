@@ -88,8 +88,23 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+defaults = {
+  "iterations": 3,
+  "resize": 250,
+  "blur_radius": 0.5,
+  "minimum_contrast": 1.75,
+}
 
-args.iterations = 3 if args.iterations is None else args.iterations
-args.resize = 250 if args.resize is None else args.resize
-args.blur_radius = 0.5 if args.blur_radius is None else args.blur_radius
-args.minimum_contrast = 1.75 if args.minimum_contrast is None else args.minimum_contrast
+for k,v in defaults.items():
+  try:
+    if getattr(args, k) is None:
+      setattr(args, k, v)
+  except AttributeError:
+    continue
+
+if args.verbose > 2:
+  import util
+  util.printerr(
+    "Arguments: " + ' '.join([f"{k}={v}" for k,v in args.__dict__.items()]),
+    end='\n\n'
+  )

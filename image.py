@@ -3,6 +3,8 @@ import contextlib
 from util import *
 from PIL import Image, ImageFilter
 from colorsys import hsv_to_rgb, rgb_to_hsv
+import tempfile
+
 
 np.set_printoptions(precision=3, suppress=True)
 
@@ -18,7 +20,7 @@ ANSI = np.uint8(
       # "rgb(0,40,40)",
       # "rgb(40,40,40)",
       "rgb(15,15,15)",
-      "rgb(188,0,9)",
+      "rgb(220,75,75)",
       "rgb(75,220,75)",
       "rgb(220,180,75)",
       "rgb(75,100,220)",
@@ -102,14 +104,13 @@ def rgb2ansi_colorized_hex(rgb):
 
 def print_palette_as_ANSI_colors(palette, separator=""):
   palette = validate_rgb_palette(palette)
-  printe(separator.join([rgb2ansi_colorized_hex(rgb) for rgb in palette]))
+  printerr(separator.join([rgb2ansi_colorized_hex(rgb) for rgb in palette]))
 
 
-def print_palette_as_foreground_on_background_ANSI_colors(palette, separator=""):
-  palette = validate_rgb_palette(palette)
-  colors=palette[1:-1]
-  background = palette[0]
-  printe( separator.join([ansi_colorize(rgb2hex(rgb), fg=rgb, bg=background) for rgb in colors]) )
+def print_palette_as_foreground_on_background_ANSI_colors(foreground_colors, background_color, separator=""):
+  foreground_colors = validate_rgb_palette(foreground_colors)
+  background_color = validate_rgb_palette(background_color)
+  printerr( separator.join([ansi_colorize(rgb2hex(rgb), fg=rgb, bg=background_color) for rgb in foreground_colors]) )
 
 
 def filter_colors_in_ellipsoid_volume(pixels, ellipsoids=[]):
@@ -182,6 +183,9 @@ def constrain_contrast_between_foreground_and_background_colors(
       verbose=False,
     ):
 
+  if verbose:
+    printerr(f"Increasing contrast to {minimum_contrast}")
+
   deltas = foreground_colors - background_color
   magnitudes = np.linalg.norm(deltas, axis=1)
   gradients = deltas / magnitudes[:, np.newaxis]
@@ -195,7 +199,7 @@ def constrain_contrast_between_foreground_and_background_colors(
 
   contrasts = np.apply_along_axis(_contrast, axis=1, arr=foreground_colors)
 
-  # contrast function isn't affine, but this is a decent heuristic for a starting part
+  # contrast function isn't affine proportional, but this is a decent heuristic for a starting point
   new_magnitudes = (magnitudes / contrasts) * minimum_contrast
   converge_steps = new_magnitudes.copy()
   new_contrasts = contrasts.copy()
@@ -219,52 +223,49 @@ def constrain_contrast_between_foreground_and_background_colors(
     new_magnitudes[indices_overshot] -= converge_steps[indices_overshot]
     converge_steps /= 2
 
+    foreground_colors[indices_needing_more_contrast] = higher_contrast_colors
+
     if verbose:
-      printe(f'{i}: ', end='')
+      printerr(f'{i}{" light" if light_background else ""}: ', end='')
       print_palette_as_foreground_on_background_ANSI_colors(
-        np.concatenate([background_color[np.newaxis,:], validate_rgb_palette(higher_contrast_colors)]),
+        foreground_colors=higher_contrast_colors,
+        background_color=background_color,
         separator=" "
       )
-      printe(f"new_contrasts: {new_contrasts}")
-      printe(f"indices_needing_more_contrast: {indices_needing_more_contrast}")
-      printe(f"contrast ratios {contrasts[indices_needing_more_contrast]/new_contrasts}")
-      printe()
+      printerr(f"new_contrasts: {new_contrasts}")
+      printerr(f"indices_needing_more_contrast: {indices_needing_more_contrast}")
+      printerr(f"contrast ratios {contrasts[indices_needing_more_contrast]/new_contrasts}")
+      printerr()
 
     contrast_unsatisfied_filter = np.abs(new_contrasts - minimum_contrast) > minimum_error
     indices_needing_more_contrast = indices_needing_more_contrast[contrast_unsatisfied_filter]
 
-  higher_contrast_colors = validate_rgb_palette(higher_contrast_colors)
-  foreground_colors[indices_needing_more_contrast] = higher_contrast_colors
-  return foreground_colors
+  return validate_rgb_palette(foreground_colors)
 
 
-class AlternateBufferManager(contextlib.AbstractContextManager):
-  def __enter__(self):
-      printe("\033[?1049h\033[0H\033[2J") # switch to secondary buffer and clear it
-  def __exit__(self, exc_type, exc_value, exc_traceback):
-      printe(f"\033[2J\033[?1049l")       # switch back to primary buffer
-
-
-def terminal_image_preview(image):
+class TerminalImagePreview(contextlib.AbstractContextManager):
   # Print image preview to terminal using w3m
   # https://blog.z3bra.org/2014/01/images-in-terminal.html
 
-  import tempfile
-
-  WIDTH_SCALAR = 7
+  WIDTH_SCALAR  = 7
   HEIGHT_SCALAR = 18
   WIDTH, HEIGHT = get_terminal_size()
   WIDTH, HEIGHT = WIDTH*WIDTH_SCALAR , HEIGHT*HEIGHT_SCALAR
   W3M_IMGDISPLAY_BIN = "/usr/lib/w3m/w3mimgdisplay"
 
+  def __init__(self, image):
+    self.image = image
+    super().__init__()
 
-  with AlternateBufferManager():
 
-    with tempfile.NamedTemporaryFile(suffix=f'.jpg') as tf:
-      image.save(tf.name)
-      popen(
-        W3M_IMGDISPLAY_BIN,
-        stdin=f"0;1;0;0;{WIDTH};{HEIGHT};;;;;{tf.name}\n4;\n3;\n"
-      )
+  def __enter__(self):
+      printerr("\033[?1049h\033[0H\033[2J") # switch to secondary buffer and clear it
 
-  input()
+      with tempfile.NamedTemporaryFile(suffix=f'.jpg') as tempf:
+        self.image.save(tempf.name)
+        stdin = f"0;1;0;0;{self.WIDTH};{self.HEIGHT};;;;;{tempf.name}\n4;\n3;\n"
+        popen(self.W3M_IMGDISPLAY_BIN, stdin=stdin)
+
+
+  def __exit__(self, exc_type, exc_value, exc_traceback):
+      printerr(f"\033[2J\033[?1049l")       # switch back to primary buffer
