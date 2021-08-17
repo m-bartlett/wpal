@@ -140,12 +140,8 @@ ansi_palette = np.concatenate([base_colors, bold_colors])
 
 midground = (0.7*base_colors[0] + 0.3*bold_colors[7]).astype(np.uint8)
 
-sorted_base_colors   = base_colors[color_order]
+sorted_base_colors = base_colors[color_order]
 sorted_bold_colors = bold_colors[color_order]
-# saturation_sorted_colors_fg  = ansi_foregrounds[:8][color_order]
-# saturation_sorted_accents_fg = ansi_foregrounds[8:][color_order]
-
-# exit(0)
 
 # Print shell-declarable strings to stdout for consumption
 for n,c in {

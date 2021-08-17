@@ -226,16 +226,12 @@ def constrain_contrast_between_foreground_and_background_colors(
     foreground_colors[indices_needing_more_contrast] = higher_contrast_colors
 
     if verbose:
-      printerr(f'{i}{" light" if light_background else ""}: ', end='')
+      printerr(f'{i}: {new_contrasts.mean()} ', end='')
       print_palette_as_foreground_on_background_ANSI_colors(
         foreground_colors=higher_contrast_colors,
         background_color=background_color,
         separator=" "
       )
-      printerr(f"new_contrasts: {new_contrasts}")
-      printerr(f"indices_needing_more_contrast: {indices_needing_more_contrast}")
-      printerr(f"contrast ratios {contrasts[indices_needing_more_contrast]/new_contrasts}")
-      printerr()
 
     contrast_unsatisfied_filter = np.abs(new_contrasts - minimum_contrast) > minimum_error
     indices_needing_more_contrast = indices_needing_more_contrast[contrast_unsatisfied_filter]
