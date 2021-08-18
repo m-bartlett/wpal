@@ -54,14 +54,8 @@ ANSI = np.uint8(
 )
 
 
-def luminance(pixel):
-  rgb = pixel / 255
-  l=[c/ 12.92 if c <= 0.03928 else ((c + 0.0055) / 1.055) ** 2.4 for c in rgb]
-  return l[0] * 0.2126 + l[1] * 0.7152 + l[2] * 0.0722;
-
-
 def contrast(rgb1, rgb2):
-  return (luminance(rgb1)+ 0.05) / (luminance(rgb2) + 0.05);
+  return abs(  ( (rgb1.min() + rgb1.max()) / 2 ) - ( (rgb2.min() + rgb2.max()) / 2 )  )
 
 
 def most_visible_foreground_color(rgb):
@@ -73,14 +67,6 @@ def most_visible_foreground_color(rgb):
     return BLACK
 
 
-# def rgb2ansi_bg(rgb):
-#   return "\x1b[48;2;{0};{1};{2}m".format(*rgb)
-
-
-# def rgb2ansi_fg(rgb):
-#   return "\x1b[38;2;{0};{1};{2}m".format(*rgb)
-
-
 def validate_rgb_palette(palette):
   palette = np.minimum(palette, np.full(palette.shape, 255, dtype=np.uint8))
   palette = np.maximum(palette, np.zeros(palette.shape, dtype=np.uint8))
@@ -88,17 +74,18 @@ def validate_rgb_palette(palette):
 
 
 def rgb2hex(rgb):
-  return "#{0:02X}{1:02X}{2:02X}".format(*rgb)
+  return "#{0:02X}{1:02X}{2:02X}".format(*rgb.astype(np.uint8))
 
 
-def ansi_colorize(message, fg=None, bg=None):
-  if len(fg) > 0: fg = "38;2;{0};{1};{2}".format(*fg.astype(np.uint8))
-  if len(bg) > 0: bg = "48;2;{0};{1};{2}".format(*bg.astype(np.uint8))
+def ansi_colorize(message, fg='', bg=''):
+  if isinstance(fg,np.ndarray):
+    fg = "38;2;{0};{1};{2}".format(*fg.astype(np.uint8))
+  if isinstance(bg,np.ndarray):
+    bg = "48;2;{0};{1};{2}".format(*bg.astype(np.uint8))
   return f"\x1b[{bg};{fg}m{message}\x1b[0m"
 
 
 def rgb2ansi_colorized_hex(rgb):
-  rgb=rgb.astype(np.uint8)
   return ansi_colorize(rgb2hex(rgb), fg=most_visible_foreground_color(rgb), bg=rgb)
 
 
@@ -192,10 +179,7 @@ def constrain_contrast_between_foreground_and_background_colors(
 
   light_background = background_color.mean() > foreground_colors.mean()
 
-  if light_background:
-    _contrast = lambda color: contrast(background_color, color)
-  else:
-    _contrast = lambda color: contrast(color, background_color)
+  _contrast = lambda color: contrast(background_color, color)
 
   contrasts = np.apply_along_axis(_contrast, axis=1, arr=foreground_colors)
 
@@ -219,14 +203,14 @@ def constrain_contrast_between_foreground_and_background_colors(
     indices_undershot = indices_needing_more_contrast[undershot_filter]
     indices_overshot = indices_needing_more_contrast[~undershot_filter]
 
+    converge_steps /= 2
     new_magnitudes[indices_undershot] += converge_steps[indices_undershot]
     new_magnitudes[indices_overshot] -= converge_steps[indices_overshot]
-    converge_steps /= 2
 
     foreground_colors[indices_needing_more_contrast] = higher_contrast_colors
 
     if verbose:
-      printerr(f'{i}: {new_contrasts.mean()} ', end='')
+      printerr(f'{i+1}: {new_contrasts.mean():0.3f} ', end='')
       print_palette_as_foreground_on_background_ANSI_colors(
         foreground_colors=higher_contrast_colors,
         background_color=background_color,

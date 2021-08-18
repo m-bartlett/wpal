@@ -26,8 +26,8 @@ if args.verbose > 1:
 	printerr(f"Using wallpaper: {wp_path}")
 
 wp=Image.open(wp_path).convert('RGB')
+wp.thumbnail((args.resize, args.resize), resample=Image.LANCZOS)
 if args.blur_radius:
-	wp.thumbnail((args.resize, args.resize), resample=Image.LANCZOS)
 	wp = wp.filter(ImageFilter.BoxBlur(radius=args.blur_radius))
 
 pixels=np.array(wp, dtype=int)[:,:,:3]
