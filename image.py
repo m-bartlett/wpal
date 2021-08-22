@@ -4,6 +4,7 @@ from util import *
 from PIL import Image, ImageFilter
 from colorsys import hsv_to_rgb, rgb_to_hsv
 import tempfile
+import termios
 
 
 np.set_printoptions(precision=3, suppress=True)
@@ -55,33 +56,43 @@ ANSI = np.uint8(
 
 
 def contrast(rgb1, rgb2):
-  return abs(  ( (rgb1.min() + rgb1.max()) / 2 ) - ( (rgb2.min() + rgb2.max()) / 2 )  )
+  rgb1 = np.array(rgb1).astype(float)
+  rgb2 = np.array(rgb2).astype(float)
+  return abs(  ( (rgb1.min() + rgb1.max()) - (rgb2.min() + rgb2.max()) ) / 2  )
 
 
 def most_visible_foreground_color(rgb):
   global WHITE
   global BLACK
-  if contrast(rgb,WHITE) < contrast(BLACK,rgb):
+  if contrast(rgb,WHITE) > contrast(BLACK,rgb):
     return WHITE
   else:
     return BLACK
 
 
 def validate_rgb_palette(palette):
-  palette = np.minimum(palette, np.full(palette.shape, 255, dtype=np.uint8))
-  palette = np.maximum(palette, np.zeros(palette.shape, dtype=np.uint8))
-  return palette.astype(np.uint8)
+  if isinstance(palette, np.ndarray):
+    palette = np.minimum(palette, np.full(palette.shape, 255, dtype=np.uint8))
+    palette = np.maximum(palette, np.zeros(palette.shape, dtype=np.uint8))
+    palette = palette.astype(np.uint8)
+  else:
+    palette = [ [ min(max(c,0),255) for c in rgb] for rgb in palette ]
+  return palette
 
 
 def rgb2hex(rgb):
-  return "#{0:02X}{1:02X}{2:02X}".format(*rgb.astype(np.uint8))
+  if isinstance(rgb, np.ndarray):
+    rgb = list(rgb.astype(np.uint8))
+  return "#{0:02X}{1:02X}{2:02X}".format(*rgb)
 
 
 def ansi_colorize(message, fg='', bg=''):
-  if isinstance(fg,np.ndarray):
-    fg = "38;2;{0};{1};{2}".format(*fg.astype(np.uint8))
-  if isinstance(bg,np.ndarray):
-    bg = "48;2;{0};{1};{2}".format(*bg.astype(np.uint8))
+  if isinstance(fg, np.ndarray):
+    fg = fg.astype(np.uint8)
+  fg = "38;2;{0};{1};{2}".format(*fg)
+  if isinstance(bg, np.ndarray):
+    bg = bg.astype(np.uint8)
+  bg = "48;2;{0};{1};{2}".format(*bg)
   return f"\x1b[{bg};{fg}m{message}\x1b[0m"
 
 
@@ -186,8 +197,8 @@ def constrain_contrast_between_foreground_and_background_colors(
   # contrast function isn't affine proportional, but this is a decent heuristic for a starting point
   new_magnitudes = (magnitudes / contrasts) * minimum_contrast
   converge_steps = new_magnitudes.copy()
-  new_contrasts = contrasts.copy()
   indices_needing_more_contrast = np.arange(foreground_colors.shape[0])[contrasts < minimum_contrast]
+  new_contrasts = contrasts.copy()[indices_needing_more_contrast]
 
   for i in range(max_iterations):
     if indices_needing_more_contrast.size < 1:
@@ -197,8 +208,16 @@ def constrain_contrast_between_foreground_and_background_colors(
     _new_magnitudes = new_magnitudes[indices_needing_more_contrast]
 
     higher_contrast_colors = (_gradients * _new_magnitudes[:,np.newaxis]) + background_color
-    new_contrasts = np.apply_along_axis(_contrast, axis=1, arr=higher_contrast_colors)
 
+    if verbose:
+      printerr(f'{i}: {new_contrasts} ', end='')
+      print_palette_as_foreground_on_background_ANSI_colors(
+        foreground_colors=higher_contrast_colors,
+        background_color=background_color,
+        separator=" "
+      )
+
+    new_contrasts = np.apply_along_axis(_contrast, axis=1, arr=higher_contrast_colors)
     undershot_filter = new_contrasts < minimum_contrast
     indices_undershot = indices_needing_more_contrast[undershot_filter]
     indices_overshot = indices_needing_more_contrast[~undershot_filter]
@@ -208,14 +227,6 @@ def constrain_contrast_between_foreground_and_background_colors(
     new_magnitudes[indices_overshot] -= converge_steps[indices_overshot]
 
     foreground_colors[indices_needing_more_contrast] = higher_contrast_colors
-
-    if verbose:
-      printerr(f'{i+1}: {new_contrasts.mean():0.3f} ', end='')
-      print_palette_as_foreground_on_background_ANSI_colors(
-        foreground_colors=higher_contrast_colors,
-        background_color=background_color,
-        separator=" "
-      )
 
     contrast_unsatisfied_filter = np.abs(new_contrasts - minimum_contrast) > minimum_error
     indices_needing_more_contrast = indices_needing_more_contrast[contrast_unsatisfied_filter]
@@ -236,16 +247,36 @@ class TerminalImagePreview(contextlib.AbstractContextManager):
   def __init__(self, image):
     self.image = image
     super().__init__()
+    self.fd = sys.stdin.fileno()
+    self.stty = termios.tcgetattr(self.fd)
 
 
   def __enter__(self):
-      printerr("\033[?1049h\033[0H\033[2J") # switch to secondary buffer and clear it
+    printerr(
+      "\033[?1049h" # switch to secondary buffer
+      "\033[?25l"   # Hide cursor
+      "\033[0H"     # move cursor to top left
+      "\033[2J"     # clear entire screen
+    )
 
-      with tempfile.NamedTemporaryFile(suffix=f'.jpg') as tempf:
-        self.image.save(tempf.name)
-        stdin = f"0;1;0;0;{self.WIDTH};{self.HEIGHT};;;;;{tempf.name}\n4;\n3;\n"
-        popen(self.W3M_IMGDISPLAY_BIN, stdin=stdin)
+    # https://blog.nelhage.com/2009/12/a-brief-introduction-to-termios-termios3-and-stty/
+    # ICANON = Canonical Mode, i.e. disabling is enabling character break "cbreak"
+    # ECHO = echoing characters, disable to not print input keys
+    new = termios.tcgetattr(self.fd)
+    new[3] = new[3] & ~termios.ICANON & ~termios.ECHO
+    termios.tcsetattr(self.fd, termios.TCSADRAIN, new) # Change attributes once output queue is "drained"
+
+    with tempfile.NamedTemporaryFile(suffix=f'.jpg') as tempf:
+      self.image.save(tempf.name)
+      stdin = f"0;1;0;0;{self.WIDTH};{self.HEIGHT};;;;;{tempf.name}\n4;\n3;\n"
+      popen(self.W3M_IMGDISPLAY_BIN, stdin=stdin)
 
 
   def __exit__(self, exc_type, exc_value, exc_traceback):
-      printerr(f"\033[2J\033[?1049l")       # switch back to primary buffer
+    printerr(
+      "\033[?25h"   # Show cursor
+      "\033[2J"     # clear entire screen
+      "\033[?1049l" # switch back to primary buffer
+    )
+
+    termios.tcsetattr(self.fd, termios.TCSADRAIN, self.stty)

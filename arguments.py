@@ -1,5 +1,14 @@
 import argparse
 
+
+defaults = {
+  "iterations": 3,
+  "resize": 250,
+  "blur_radius": 0.5,
+  "minimum_contrast": 50,
+}
+
+
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
@@ -87,13 +96,6 @@ parser.add_argument(
 
 
 args = parser.parse_args()
-
-defaults = {
-  "iterations": 3,
-  "resize": 250,
-  "blur_radius": 0.5,
-  "minimum_contrast": 1.75,
-}
 
 for k,v in defaults.items():
   try:
