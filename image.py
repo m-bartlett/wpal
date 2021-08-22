@@ -100,15 +100,31 @@ def rgb2ansi_colorized_hex(rgb):
   return ansi_colorize(rgb2hex(rgb), fg=most_visible_foreground_color(rgb), bg=rgb)
 
 
-def print_palette_as_ANSI_colors(palette, separator=""):
+def print_palette_as_colorized_hexcodes(palette, separator=""):
   palette = validate_rgb_palette(palette)
   printerr(separator.join([rgb2ansi_colorized_hex(rgb) for rgb in palette]))
 
 
-def print_palette_as_foreground_on_background_ANSI_colors(foreground_colors, background_color, separator=""):
+def print_palette_as_foreground_on_background_ANSI_colors( foreground_colors,
+                                                           background_color,
+                                                           separator=""
+                                                         ):
   foreground_colors = validate_rgb_palette(foreground_colors)
   background_color = validate_rgb_palette(background_color)
-  printerr( separator.join([ansi_colorize(rgb2hex(rgb), fg=rgb, bg=background_color) for rgb in foreground_colors]) )
+  printerr(
+    separator.join([
+      ansi_colorize(rgb2hex(rgb), fg=rgb, bg=background_color) for rgb in foreground_colors
+    ])
+  )
+
+
+def print_palette_as_filled_blocks(palette, block_content=" ", separator=""):
+  palette = validate_rgb_palette(palette)
+  printerr(
+    separator.join([
+      ansi_colorize(block_content, fg=rgb, bg=rgb) for rgb in palette
+    ])
+  )
 
 
 def filter_colors_in_ellipsoid_volume(pixels, ellipsoids=[]):
@@ -240,8 +256,7 @@ class TerminalImagePreview(contextlib.AbstractContextManager):
 
   WIDTH_SCALAR  = 7
   HEIGHT_SCALAR = 18
-  WIDTH, HEIGHT = get_terminal_size()
-  WIDTH, HEIGHT = WIDTH*WIDTH_SCALAR , HEIGHT*HEIGHT_SCALAR
+
   W3M_IMGDISPLAY_BIN = "/usr/lib/w3m/w3mimgdisplay"
 
   def __init__(self, image):
@@ -249,12 +264,14 @@ class TerminalImagePreview(contextlib.AbstractContextManager):
     super().__init__()
     self.fd = sys.stdin.fileno()
     self.stty = termios.tcgetattr(self.fd)
+    self.TERM_WIDTH, self.TERM_HEIGHT = get_terminal_size()
+    self.WIDTH, self.HEIGHT = self.TERM_WIDTH*self.WIDTH_SCALAR , self.TERM_HEIGHT*self.HEIGHT_SCALAR
 
 
   def __enter__(self):
     printerr(
       "\033[?1049h" # switch to secondary buffer
-      "\033[?25l"   # Hide cursor
+      "\033[?25l"   # hide cursor
       "\033[0H"     # move cursor to top left
       "\033[2J"     # clear entire screen
     )
@@ -271,10 +288,12 @@ class TerminalImagePreview(contextlib.AbstractContextManager):
       stdin = f"0;1;0;0;{self.WIDTH};{self.HEIGHT};;;;;{tempf.name}\n4;\n3;\n"
       popen(self.W3M_IMGDISPLAY_BIN, stdin=stdin)
 
+    return self
+
 
   def __exit__(self, exc_type, exc_value, exc_traceback):
     printerr(
-      "\033[?25h"   # Show cursor
+      "\033[?25h"   # show cursor
       "\033[2J"     # clear entire screen
       "\033[?1049l" # switch back to primary buffer
     )

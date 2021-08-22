@@ -136,13 +136,13 @@ sorted_bold_colors = bold_colors[color_order]
 
 # Print shell-declarable strings to stdout for consumption
 for n,c in {
-        **{ f"color{i}": c for i,c in enumerate(ansi_palette) },
-        **{ f"color{i}D":c for i,c in enumerate(palettes[0]) },
-        **{ f"color{i}d":c for i,c in enumerate(palettes[1]) },
-        **{ f"color{i}l":c for i,c in enumerate(palettes[3]) },
-        **{ f"color{i}L":c for i,c in enumerate(palettes[4]) },
-        **{ f"color{i+1}s":c for i,c in enumerate(sorted_base_colors) },
-        **{ f"color{i+1}S":c for i,c in enumerate(sorted_bold_colors) },
+        **{ f"color{i}"   : c for i,c in enumerate(ansi_palette) },
+        **{ f"color{i}D"  : c for i,c in enumerate(palettes[0]) },
+        **{ f"color{i}d"  : c for i,c in enumerate(palettes[1]) },
+        **{ f"color{i}l"  : c for i,c in enumerate(palettes[3]) },
+        **{ f"color{i}L"  : c for i,c in enumerate(palettes[4]) },
+        **{ f"color{i+1}s": c for i,c in enumerate(sorted_base_colors) },
+        **{ f"color{i+1}S": c for i,c in enumerate(sorted_bold_colors) },
         "highlight":highlight,
         "lowlight":lowlight,
         "midground":midground,
@@ -154,15 +154,28 @@ for n,c in {
 
 if args.verbose > 1:  # Show in-terminal image preview at high verbosity
 
-  with TerminalImagePreview(wp):
-    verbose_palettes = (
-      list(palettes) +
-      [[highlight, lowlight]] +
-      [sorted_base_colors, sorted_bold_colors]
-    )
+  with TerminalImagePreview(wp) as preview:
+
+    if args.verbose > 2:
+
+      verbose_palettes = (
+        [base_colors,bold_colors] +
+        [[highlight, lowlight]] +
+        [ANSI] +
+        list(palettes) +
+        [sorted_base_colors, sorted_bold_colors]
+      )
+
+      palette_printer = lambda palette: print_palette_as_colorized_hexcodes(palette)
+
+    else:
+      # printerr(f"\x1b[{preview.TERM_HEIGHT//2};{preview.TERM_WIDTH//2}H", end='')
+      verbose_palettes = [base_colors,bold_colors] + [[highlight, lowlight]]
+      palette_printer = lambda palette: print_palette_as_filled_blocks(palette, block_content="     ")
+
 
     for palette in verbose_palettes:
-      print_palette_as_ANSI_colors(palette, separator="")
+      palette_printer(palette)
 
     if sys.stdin.read(1) == "\x1b": # If ESC is pressed, exit failure
       sys.exit(1)
