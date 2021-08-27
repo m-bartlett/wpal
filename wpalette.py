@@ -33,16 +33,14 @@ if args.blur_radius:
 pixels=np.array(wp, dtype=int)[:,:,:3]
 pixels=pixels.reshape(pixels.shape[0] * pixels.shape[1], pixels.shape[2] )
 
-pixels = (
-  filter_colors_in_ellipsoid_volume(
-    pixels,
-    ellipsoids = [
-        {   # Filter brown
-            "radii":  np.array([100,100,150]),
-            "offset": np.array([128, 128, 0])
-        },
-    ]
-  )
+pixels = filter_colors_in_ellipsoid_volume(
+  pixels,
+  ellipsoids = [
+      {   # Filter brown
+          "radii":  np.array([100,100,150]),
+          "offset": np.array([128, 128, 0])
+      },
+  ]
 )
 
 (
@@ -158,54 +156,36 @@ if args.verbose > 1:  # Show in-terminal image preview at high verbosity
 
     if args.verbose > 2:
 
-      verbose_palettes = (
-        [base_colors,bold_colors] +
-        [[highlight, lowlight]] +
-        [ANSI] +
-        list(palettes) +
-        [sorted_base_colors, sorted_bold_colors]
-      )
+      # verbose_palettes = (
+      #   [base_colors,bold_colors] +
+      #   [[highlight, lowlight]] +
+      #   [ANSI] +
+      #   list(palettes) +
+      #   [sorted_base_colors, sorted_bold_colors]
+      # )
 
-      palette_printer = lambda palette: print_palette_as_colorized_hexcodes(palette)
+      # palette_printer = lambda palette: printerr(palette_as_colorized_hexcodes(palette))
+
+      print_palette_preview( base_colors=base_colors,
+                             bold_colors=bold_colors,
+                             highlight=highlight,
+                             lowlight=lowlight
+                           )
 
     else:
       # printerr(f"\x1b[{preview.TERM_HEIGHT//2};{preview.TERM_WIDTH//2}H", end='')
       verbose_palettes = [base_colors,bold_colors] + [[highlight, lowlight]]
-      palette_printer = lambda palette: print_palette_as_filled_blocks(palette, block_content="     ")
+      palette_printer = lambda palette: printerr(palette_as_filled_blocks(palette, block_content="     "))
 
 
-    for palette in verbose_palettes:
-      palette_printer(palette)
+    # for palette in verbose_palettes:
+    #   palette_printer(palette)
 
     if sys.stdin.read(1) == "\x1b": # If ESC is pressed, exit failure
       sys.exit(1)
 
-
 if args.verbose > 0:
-	DELIMITER="   "
-	for line in zip([base_colors,bold_colors], [[lowlight],[highlight]]):
-	  printerr(
-	    " ".join(
-	      [
-	        "".join(
-	          [
-	            "\x1b[48;2;{0};{1};{2}m{3}\x1b[0m".format(*c, DELIMITER)
-	            for c in part
-	          ]
-	        )
-	        for part in line
-	      ]
-	    )
-	  )
-
-# avg_color = pixels.mean(axis=0).astype(int)
-
-# avg_closest_color = accents[np.argmin( ( ( accents[1:-1] - ANSI[1:-1] )**2 ).sum(axis=1) ) + 1]
-# printerr(
-#   "".join(
-#     [
-#           "\x1b[48;2;{0};{1};{2}m{3}\x1b[0m".format(*c, DELIMITER)
-#           for c in [avg_color, avg_closest_color]
-#     ]
-#   )
-# )
+  pretty_print_palette( base_colors=base_colors,
+                        bold_colors=bold_colors,
+                        highlight=highlight,
+                        lowlight=lowlight )

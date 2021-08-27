@@ -15,7 +15,7 @@ WHITE=np.array([255,255,255])
 
 ANSI = np.uint8(
   [
-    list(map(int, c.partition('(')[2][:-1].split(',')))
+    list(map(int, c.partition('(')[2][:-1].split(',')))  # this is to trick my editor to show the colors
     for c in [
 
       # "rgb(0,40,40)",
@@ -61,13 +61,11 @@ def contrast(rgb1, rgb2):
   return abs(  ( (rgb1.min() + rgb1.max()) - (rgb2.min() + rgb2.max()) ) / 2  )
 
 
-def most_visible_foreground_color(rgb):
-  global WHITE
-  global BLACK
-  if contrast(rgb,WHITE) > contrast(BLACK,rgb):
-    return WHITE
+def most_visible_foreground_color(rgb, white=WHITE, black=BLACK):
+  if contrast(rgb,white) > contrast(black,rgb):
+    return white
   else:
-    return BLACK
+    return black
 
 
 def validate_rgb_palette(palette):
@@ -97,34 +95,80 @@ def ansi_colorize(message, fg='', bg=''):
 
 
 def rgb2ansi_colorized_hex(rgb):
-  return ansi_colorize(rgb2hex(rgb), fg=most_visible_foreground_color(rgb), bg=rgb)
+  return ansi_colorize(
+    rgb2hex(rgb),
+    fg=most_visible_foreground_color(rgb),
+    bg=rgb
+  )
 
 
-def print_palette_as_colorized_hexcodes(palette, separator=""):
+def palette_as_colorized_hexcodes(palette, separator=""):
   palette = validate_rgb_palette(palette)
-  printerr(separator.join([rgb2ansi_colorized_hex(rgb) for rgb in palette]))
+  return separator.join([rgb2ansi_colorized_hex(rgb) for rgb in palette])
 
 
-def print_palette_as_foreground_on_background_ANSI_colors( foreground_colors,
-                                                           background_color,
-                                                           separator=""
-                                                         ):
+def palette_as_foreground_on_background_ANSI_colors( foreground_colors,
+                                                     background_color,
+                                                     separator=""      ):
   foreground_colors = validate_rgb_palette(foreground_colors)
   background_color = validate_rgb_palette(background_color)
-  printerr(
-    separator.join([
-      ansi_colorize(rgb2hex(rgb), fg=rgb, bg=background_color) for rgb in foreground_colors
-    ])
-  )
+  return separator.join([
+    ansi_colorize(rgb2hex(rgb), fg=rgb, bg=background_color)
+    for rgb in foreground_colors
+  ])
 
 
-def print_palette_as_filled_blocks(palette, block_content=" ", separator=""):
+def palette_as_filled_blocks(palette, block_content=" ", separator=""):
   palette = validate_rgb_palette(palette)
+  return separator.join([
+    ansi_colorize(block_content, fg=rgb, bg=rgb)
+    for rgb in palette
+  ])
+
+
+def pretty_print_palette( *,
+                          base_colors,
+                          bold_colors,
+                          highlight,
+                          lowlight,
+                          block_content="   ",
+                          palette_separator="",
+                          highlight_separator="  " ):
+  for line in zip([base_colors,bold_colors], [[lowlight],[highlight]]):
+    printerr(
+      highlight_separator.join([
+        palette_as_filled_blocks(group, block_content=block_content, separator=palette_separator)
+        for group in line
+      ])
+    )
+
+
+def print_palette_preview(*, base_colors, bold_colors, highlight, lowlight):
+  bg = base_colors[0]
+  fg = bold_colors[7]
+  spacer_width = len("#000000")
+  spacer = " " * spacer_width
+  palette_info_width = spacer_width * 6 + 6
+  width, _ = get_terminal_size()
+  offset_width = (width - palette_info_width) // 2
+  offset = " " * offset_width
+
   printerr(
-    separator.join([
-      ansi_colorize(block_content, fg=rgb, bg=rgb) for rgb in palette
-    ])
+    offset +
+    ansi_colorize(" " + spacer + rgb2hex(bg) + spacer + " ", fg=highlight, bg=bg) + " " +
+    ansi_colorize(" " + spacer + rgb2hex(fg) + spacer + " ", fg=lowlight, bg=fg)
   )
+  printerr()
+
+  colors = base_colors[1:-1]
+  colors[[1,2,3,4,5]] = colors[[2,1,5,3,4]]
+  printerr(offset + palette_as_foreground_on_background_ANSI_colors(colors, bg, separator=" "))
+  printerr(offset + palette_as_filled_blocks(colors, block_content=spacer, separator=" "))
+
+  colors = bold_colors[1:-1]
+  colors[[1,2,3,4,5]] = colors[[2,1,5,3,4]]
+  printerr(offset + palette_as_filled_blocks(colors, block_content=spacer, separator=" "))
+  printerr(offset + palette_as_foreground_on_background_ANSI_colors(colors, bg, separator=" "))
 
 
 def filter_colors_in_ellipsoid_volume(pixels, ellipsoids=[]):
@@ -197,9 +241,6 @@ def constrain_contrast_between_foreground_and_background_colors(
       verbose=False,
     ):
 
-  if verbose:
-    printerr(f"Increasing contrast to {minimum_contrast}")
-
   deltas = foreground_colors - background_color
   magnitudes = np.linalg.norm(deltas, axis=1)
   gradients = deltas / magnitudes[:, np.newaxis]
@@ -226,11 +267,13 @@ def constrain_contrast_between_foreground_and_background_colors(
     higher_contrast_colors = (_gradients * _new_magnitudes[:,np.newaxis]) + background_color
 
     if verbose:
-      printerr(f'{i}: {new_contrasts} ', end='')
-      print_palette_as_foreground_on_background_ANSI_colors(
-        foreground_colors=higher_contrast_colors,
-        background_color=background_color,
-        separator=" "
+      printerr(f'{i}: {new_contrasts}->{minimum_contrast} ', end='')
+      printerr(
+        palette_as_foreground_on_background_ANSI_colors(
+          foreground_colors=higher_contrast_colors,
+          background_color=background_color,
+          separator=" "
+        )
       )
 
     new_contrasts = np.apply_along_axis(_contrast, axis=1, arr=higher_contrast_colors)
