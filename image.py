@@ -18,20 +18,21 @@ ANSI = np.uint8(
     list(map(int, c.partition('(')[2][:-1].split(',')))  # this is to trick my editor to show the colors
     for c in [
 
-      # "rgb(0,40,40)",
-      # "rgb(40,40,40)",
       "rgb(15,15,15)",
-      "rgb(220,75,75)",
-      "rgb(75,220,75)",
-      "rgb(220,180,75)",
+      "rgb(220,75,95)",
+      # "rgb(75,220,75)",
+      "rgb(00,180,80)",
+      # "rgb(220,180,75)",
+      # "rgb(255,120,0)",
+      "rgb(237,150,37)",
       "rgb(75,100,220)",
       "rgb(120,75,220)",
       "rgb(75,170,220)",
       "rgb(220,220,220)"
 
       # # Muted
-      # "rgb(0,40,40)",
-      # "rgb(148,0,9)",
+      # "rgb(40,40,40)",
+      # "rgb(220,75,75)",
       # "rgb(00,180,80)",
       # "rgb(255,120,0)",
       # "rgb(80,120,220)",
@@ -55,17 +56,30 @@ ANSI = np.uint8(
 )
 
 
+def luminance(pixel):
+  try:
+    rgb = pixel / 255
+  except TypeError:
+    rgb = np.array(pixel) / 255
+  l=[c/ 12.92 if c <= 0.03928 else ((c + 0.0055) / 1.055) ** 2.4 for c in rgb]
+  return l[0] * 0.2126 + l[1] * 0.7152 + l[2] * 0.0722;
+
+
+def luminant_contrast(rgb1, rgb2):
+  return (luminance(rgb1)+ 0.05) / (luminance(rgb2) + 0.05);
+
+
 def contrast(rgb1, rgb2):
   rgb1 = np.array(rgb1).astype(float)
   rgb2 = np.array(rgb2).astype(float)
-  return abs(  ( (rgb1.min() + rgb1.max()) - (rgb2.min() + rgb2.max()) ) / 2  )
+  return abs(  ( (rgb2.min() + rgb2.max()) - (rgb1.min() + rgb1.max()) ) / 2  )
 
 
 def most_visible_foreground_color(rgb, white=WHITE, black=BLACK):
-  if contrast(rgb,white) > contrast(black,rgb):
-    return white
-  else:
+  if luminant_contrast(rgb,white) > luminant_contrast(black,rgb):
     return black
+  else:
+    return white
 
 
 def validate_rgb_palette(palette):
@@ -79,8 +93,10 @@ def validate_rgb_palette(palette):
 
 
 def rgb2hex(rgb):
-  if isinstance(rgb, np.ndarray):
-    rgb = list(rgb.astype(np.uint8))
+  try:
+    rgb = [round(c) for c in rgb]
+  except:
+    printerr(rgb)
   return "#{0:02X}{1:02X}{2:02X}".format(*rgb)
 
 
@@ -160,12 +176,12 @@ def print_palette_preview(*, base_colors, bold_colors, highlight, lowlight):
   )
   printerr()
 
-  colors = base_colors[1:-1]
+  colors = base_colors[1:-1].copy()
   colors[[1,2,3,4,5]] = colors[[2,1,5,3,4]]
   printerr(offset + palette_as_foreground_on_background_ANSI_colors(colors, bg, separator=" "))
   printerr(offset + palette_as_filled_blocks(colors, block_content=spacer, separator=" "))
 
-  colors = bold_colors[1:-1]
+  colors = bold_colors[1:-1].copy()
   colors[[1,2,3,4,5]] = colors[[2,1,5,3,4]]
   printerr(offset + palette_as_filled_blocks(colors, block_content=spacer, separator=" "))
   printerr(offset + palette_as_foreground_on_background_ANSI_colors(colors, bg, separator=" "))
@@ -235,8 +251,8 @@ def constrain_contrast_between_foreground_and_background_colors(
       *,
       foreground_colors, # Assumes a uint8 numpy array with shape (6,3)
       background_color,  # Assumes a uint8 numpy array with shape (1,3)
-      minimum_contrast=1.7,
-      minimum_error=0.001,
+      minimum_contrast=30,
+      minimum_error=0.1,
       max_iterations=60,  # convergence isn't guaranteed, prevent infinite loop
       verbose=False,
     ):
@@ -245,9 +261,13 @@ def constrain_contrast_between_foreground_and_background_colors(
   magnitudes = np.linalg.norm(deltas, axis=1)
   gradients = deltas / magnitudes[:, np.newaxis]
 
+
   light_background = background_color.mean() > foreground_colors.mean()
 
-  _contrast = lambda color: contrast(background_color, color)
+  if light_background:
+    _contrast = lambda color: contrast(background_color, color)
+  else:
+    _contrast = lambda color: contrast(color, background_color)
 
   contrasts = np.apply_along_axis(_contrast, axis=1, arr=foreground_colors)
 
@@ -311,6 +331,13 @@ class TerminalImagePreview(contextlib.AbstractContextManager):
     self.WIDTH, self.HEIGHT = self.TERM_WIDTH*self.WIDTH_SCALAR , self.TERM_HEIGHT*self.HEIGHT_SCALAR
 
 
+  def display_image(self):
+    with tempfile.NamedTemporaryFile(suffix=f'.jpg') as tempf:
+      self.image.save(tempf.name)
+      stdin = f"0;1;0;0;{self.WIDTH};{self.HEIGHT};;;;;{tempf.name}\n4;\n3;\n"
+      popen(self.W3M_IMGDISPLAY_BIN, stdin=stdin)
+
+
   def __enter__(self):
     printerr(
       "\033[?1049h" # switch to secondary buffer
@@ -326,11 +353,7 @@ class TerminalImagePreview(contextlib.AbstractContextManager):
     new[3] = new[3] & ~termios.ICANON & ~termios.ECHO
     termios.tcsetattr(self.fd, termios.TCSADRAIN, new) # Change attributes once output queue is "drained"
 
-    with tempfile.NamedTemporaryFile(suffix=f'.jpg') as tempf:
-      self.image.save(tempf.name)
-      stdin = f"0;1;0;0;{self.WIDTH};{self.HEIGHT};;;;;{tempf.name}\n4;\n3;\n"
-      popen(self.W3M_IMGDISPLAY_BIN, stdin=stdin)
-
+    self.display_image()
     return self
 
 

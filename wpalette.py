@@ -12,6 +12,11 @@ from image import *
 from arguments import args
 from kmeans import *
 
+VERBOSE_LOW    = args.verbose > 0
+VERBOSE_MEDIUM = args.verbose > 1
+VERBOSE_HIGH   = args.verbose > 2
+VERBOSE_DEBUG  = args.verbose > 3
+
 np.set_printoptions(precision=3, suppress=True)
 
 if args.wallpaper_picker:
@@ -153,33 +158,24 @@ for n,c in {
 if args.verbose > 1:  # Show in-terminal image preview at high verbosity
 
   with TerminalImagePreview(wp) as preview:
+    from time import sleep
+    sleep(0.05)
 
-    if args.verbose > 2:
+    if args.verbose > 3:
 
-      # verbose_palettes = (
-      #   [base_colors,bold_colors] +
-      #   [[highlight, lowlight]] +
-      #   [ANSI] +
-      #   list(palettes) +
-      #   [sorted_base_colors, sorted_bold_colors]
-      # )
+      for palette_batch in [ [ANSI]+[base_colors,bold_colors]+[[highlight, lowlight]],
+                             list(palettes),
+                             [sorted_base_colors, sorted_bold_colors] ]:
+        for palette in palette_batch:
+          printerr(palette_as_colorized_hexcodes(palette, separator=" "))
+        printerr()
 
-      # palette_printer = lambda palette: printerr(palette_as_colorized_hexcodes(palette))
+    else:
 
       print_palette_preview( base_colors=base_colors,
                              bold_colors=bold_colors,
                              highlight=highlight,
-                             lowlight=lowlight
-                           )
-
-    else:
-      # printerr(f"\x1b[{preview.TERM_HEIGHT//2};{preview.TERM_WIDTH//2}H", end='')
-      verbose_palettes = [base_colors,bold_colors] + [[highlight, lowlight]]
-      palette_printer = lambda palette: printerr(palette_as_filled_blocks(palette, block_content="     "))
-
-
-    # for palette in verbose_palettes:
-    #   palette_printer(palette)
+                             lowlight=lowlight )
 
     if sys.stdin.read(1) == "\x1b": # If ESC is pressed, exit failure
       sys.exit(1)
@@ -189,3 +185,6 @@ if args.verbose > 0:
                         bold_colors=bold_colors,
                         highlight=highlight,
                         lowlight=lowlight )
+
+
+  # from concurrent.futures import ThreadPoolExecutor

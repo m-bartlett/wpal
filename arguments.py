@@ -6,6 +6,8 @@ defaults = {
   "resize": 250,
   "blur_radius": 0.5,
   "minimum_contrast": 50,
+  # light_minimum_contrast: 50,
+  # dark_minimum_contrast: 30
 }
 
 
@@ -80,6 +82,14 @@ parser.add_argument(
   action='count',
   default=0,
   help="print extra palette coloration to terminal, supply extra v's for more verbosity"
+)
+
+parser.add_argument(
+  "--hooks",
+  "-H",
+  action='store',
+  nargs='*',
+  help="execute hook scripts after exporting color information to the environment and Xresources"
 )
 
 # parser.add_argument(
