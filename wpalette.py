@@ -11,10 +11,10 @@ from image import *
 from arguments import args
 from kmeans import *
 
-VERBOSE_LOW    = args.verbose > 0
-VERBOSE_MEDIUM = args.verbose > 1
-VERBOSE_HIGH   = args.verbose > 2
 VERBOSE_DEBUG  = args.verbose > 3
+VERBOSE_HIGH   = VERBOSE_DEBUG or args.verbose > 2
+VERBOSE_MEDIUM = VERBOSE_HIGH or args.verbose > 1
+VERBOSE_LOW    = VERBOSE_MEDIUM or args.verbose > 0
 
 np.set_printoptions(precision=3, suppress=True)
 
