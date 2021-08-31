@@ -1,0 +1,344 @@
+#!/usr/bin/env bash
+
+cat <<EOF > $HOME/.config/sublime-text/Packages/User/xresources.sublime-color-scheme
+{
+    "name": "XResources",
+    "author": "Michael Bartlett",
+    "globals": {
+        "accent" /*modified tab*/       : "$highlight",
+        "active_guide" /*indent line*/  : "$lowlight",
+        "guide"                         : "$midground",
+        "stack_guide"                   : "$midground",
+        "background"                    : "$color0",
+        "block_caret"                   : "$highlight",
+        "caret"                         : "$highlight",
+        "bracket_contents_foreground"   : "$highlight",
+        "bracket_contents_options"      : "bold underline forground",
+        "brackets_foreground"           : "$highlight",
+        "brackets_options"              : "bold underline forground",
+        "find_highlight" /*background*/ : "$color0L",
+        "find_highlight_foreground"     : "$highlight",
+        "fold_marker"                   : "$highlight",
+        "foreground"                    : "$color7",
+        "gutter"                        : "$color0",
+        "gutter_foreground"             : "$midground",
+        "highlight" /*inactive find*/   : "$lowlight",
+        "inactive_selection" /*bg*/     : "$color0L",
+        "selection_foreground"          : "$highlight",
+        "inactive_selection_foreground" : "$lowlight",
+        "line_diff_added"               : "$color10",
+        "line_diff_deleted"             : "$color9",
+        "line_diff_modified"            : "$color12",
+        "line_diff_width" /*1-8*/       : "1",
+        "line_highlight"                : "$color0L",
+        "misspelling"                   : "#F00",
+        "selection"                     : "$color0l",
+        "selection_border"              : "$highlight",
+        "selection_border_width"        : "1",
+        "selection_corner_radius"       : "2",
+        "selection_corner_style"        : "round",
+        "shadow"                        : "#0004",
+        "tags_foreground"               : "$highlight",
+        "tags_options"                  : "underline foreground",
+    },
+    "rules": [
+        {
+          "name": "Comment", "scope": "comment, punctuation.definition.comment", "foreground": "$midground"
+        },
+        {
+          "name": "Built-in constant", "scope": "constant, constant.language",
+          "foreground": "$color1s",
+          "font_style": "italic"
+        },
+        {
+          "name": "Backslash escaped characters", "scope": "constant.character, constant.character.escape, constant.other",
+          "foreground": "$color2s"
+        },
+        {
+          "name": "String", "scope": "string", "foreground": "$color2S"
+        },
+        {
+          "name": "Number", "scope": "constant.numeric", "foreground": "$color3S", "font_style": ""
+        },
+        {
+          "name": "Function argument", "scope": "variable.parameter",
+          "foreground": "$color3S"
+        },
+        {
+          "name": "Operators", "scope": "keyword.operator",
+          "foreground": "$color1S"
+        },
+        {
+          "name": "Keyword", "scope": "keyword - keyword.operator, keyword.operator.word",
+          "foreground": "$color5S"
+        },
+        {
+          "name": "Keyword2", "scope": "keyword.control, keyword.declaration",
+          "foreground": "$color5S"
+        },
+        {
+          "name": "Function call", "scope": "variable.function, variable.annotation",
+          "foreground": "$color4s"
+        },
+        {
+          "name": "Entity name", "scope": "entity.name.function",
+          "foreground": "$color6S"
+        },
+        {
+          "name": "Entity name", "scope": "entity.name - (entity.name.section | entity.name.tag | entity.name.label)",
+          "foreground": "$color3S"
+        },
+        {
+          "name": "Entity name", "scope": "entity.name.constant",
+          "foreground": "$color3s"
+         ,"font_style": "glow"
+        },
+        {
+          "name": "Entity name", "scope": "entity.name.section, entity.name.tag, entity.name.label",
+          "foreground": "$highlight"
+        },
+        {
+          "name": "Inherited class", "scope": "entity.other.inherited-class",
+          "foreground": "$color6S",
+          "font_style": "italic underline"
+        },
+        {
+          "name": "Markdown strikethrough", "scope": "markup.strikethrough",
+          "font_style": "squiggly_underline",
+          "foreground": "$midground"
+        },
+        {
+          "name": "Tag attribute", "scope": "entity.other.attribute-name",
+          "foreground": "$color5S"
+        },
+        {
+          "name": "Member Variable", "scope": "variable.member",
+          "foreground": "$color1S"
+        },
+        {
+          "name": "Language variable", "scope": "variable.language",
+          "foreground": "$color1S",
+          "font_style": "italic"
+        },
+        {
+          "name": "Library function", "scope": "support.function, support.macro",
+          "foreground": "$color4S",
+          "font_style": "italic"
+        },
+        {
+          "name": "Library constant", "scope": "support.constant",
+          "foreground": "$color5S",
+          "font_style": "italic"
+        },
+        {
+          "name": "Library class/type", "scope": "support.type, support.class",
+          "foreground": "$color4S",
+          "font_style": "italic"
+        },
+        {
+          "name": "Invalid", "scope": "invalid",
+          "foreground": "$color7l",
+          "background": "$color1S"
+        },
+        {
+          "name": "Invalid deprecated", "scope": "invalid.deprecated",
+          "foreground": "$color7l",
+          "background": "$color3s"
+        },
+        {
+          "name": "Storage", "scope": "storage",
+          "foreground": "$color1S"
+        },
+        {
+          "name": "Storage type", "scope": "storage.type, storage.modifier", /* def class uint8_t */
+          "foreground": "$color5S",
+          "font_style": "italic"
+        },
+        {
+          "name": "Punctuation", "scope": "punctuation.definition",
+          "foreground": "$color6s"
+        },
+        {
+          "name": "Separator", "scope": "punctuation.separator, punctuation.terminator",
+          "foreground": "$color10"
+        },
+        {
+          "name": "Section", "scope": "punctuation.section",
+          "foreground": "$color7L"
+        },
+        {
+          "name": "Annotation", "scope": "punctuation.definition.annotation",
+          "foreground": "$color6S"
+        },
+        {
+          "name": "Accessor", "scope": "punctuation.accessor",
+          "foreground": "$color"
+        },
+        {
+          "name": "markup headings", "scope": "markup.heading",
+          "font_style": "bold"
+        },
+        {
+          "name": "markup headings", "scope": "markup.heading punctuation.definition.heading",
+          "foreground": "$color1s"
+        },
+        {
+          "name": "markup h1", "scope": "markup.heading.1 punctuation.definition.heading",
+          "foreground": "$color1S"
+        },
+        {
+          "name": "markup links", "scope": "string.other.link, markup.underline.link",
+          "foreground": "$color4S"
+        },
+        {
+          "name": "markup bold", "scope": "markup.bold",
+          "font_style": "bold"
+        },
+        {
+          "name": "markup italic", "scope": "markup.italic",
+          "font_style": "italic"
+        },
+        {
+          "name": "markup bold/italic", "scope": "markup.italic markup.bold | markup.bold markup.italic",
+          "font_style": "bold italic"
+        },
+        {
+          "name": "markup strikethrough", "scope": "punctuation.definition.strikethrough markup.strikethrough",
+          "font_style": "squiggly_underline"
+        },
+        {
+          "name": "markup hr", "scope": "punctuation.definition.thematic-break",
+          "foreground": "$color3S"
+        },
+        {
+          "name": "markup numbered list bullet", "scope": "markup.list.numbered.bullet",
+          "foreground": "$color2S"
+        },
+        {
+          "name": "markup blockquote", "scope": "markup.quote punctuation.definition.blockquote, markup.list punctuation.definition.list_item",
+          "foreground": "$color3S"
+        },
+        {
+          "name": "markup code", "scope": "markup.raw",
+          "background": "color($color0L alpha(0.38))"
+        },
+        {
+          "name": "markup code", "scope": "markup.raw.inline",
+          "background": "color($color0L alpha(0.5))"
+        },
+        {
+          "name": "markup punctuation", "scope": "(text punctuation.definition.italic | text punctuation.definition.bold)",
+          "foreground": "$color5S"
+        },
+        {
+          "name": "diff.header", "scope": "meta.diff, meta.diff.header",
+          "foreground": "$color5S"
+        },
+        {
+          "name": "diff.deleted", "scope": "markup.deleted",
+          "foreground": "$color9"
+        },
+        {
+          "name": "diff.inserted", "scope": "markup.inserted",
+          "foreground": "$color10"
+        },
+        {
+          "name": "diff.changed", "scope": "markup.changed",
+          "foreground": "$color12"
+        },
+        {
+          "name": "CSS Properties", "scope": "support.type.property-name",
+          "foreground": "$color7"
+        },
+        {
+          "scope": "constant.numeric.line-number.match",
+          "foreground": "$color1S"
+        },
+        {
+          "scope": "message.error",
+          "foreground": "$color1S"
+        },
+        {
+          "scope": "diff.deleted",
+          "background": "hsla(357, 45%, 60%, 0.15)",
+          "foreground_adjust": "l(+ 5%)"
+        },
+        {
+          "scope": "diff.deleted.char",
+          "background": "hsla(357, 60%, 60%, 0.30)",
+          "foreground_adjust": "l(+ 10%)"
+        },
+        {
+          "scope": "diff.inserted",
+          "background": "hsla(180, 45%, 60%, 0.15)",
+          "foreground_adjust": "l(+ 5%)"
+        },
+        {
+          "scope": "diff.inserted.char",
+          "background": "hsla(180, 60%, 60%, 0.30)",
+          "foreground_adjust": "l(+ 10%)"
+        },
+        {
+          "name": "JavaScript Dollar", "scope": "variable.other.dollar.only.js, variable.other.object.dollar.only.js, variable.type.dollar.only.js, support.class.dollar.only.js",
+          "foreground": "$color6S"
+        },
+        {
+          "name": "YAML Key", "scope": "entity.name.tag.yaml",
+          "foreground": "$color6S"
+        },
+        {
+          "name": "YAML String", "scope": "source.yaml string.unquoted",
+          "foreground": "$color7"
+        },
+        {
+          "name": "JSON rootkey",
+          "scope": "source.json meta.mapping.key.json string.quoted.double.json",
+          "foreground": "$color2S"
+        },
+        {
+          "name": "JSON subkey",
+          "scope": "source.json meta.mapping.value.json meta.mapping.key.json string.quoted.double.json",
+          "foreground": "$color6S"
+        },
+        {
+          "name": "JSON subkey",
+          "scope": "source.json meta.mapping.value.json meta.mapping.value.json meta.mapping.key.json string.quoted.double.json",
+          "foreground": "$color4S"
+        },
+        {
+          "name": "Python import",
+          "scope": "source.python meta.statement.import.python meta.qualified-name.python meta.generic-name.python",
+          "foreground": "$color1S"
+        },
+        {
+          "name": "Shell brackets",
+          "scope": "source.shell.bash meta.conditional.shell support.function",
+          "foreground": "$colors2S",
+          "font_style": ""
+        },
+        {
+          "name": "Markdown checklist brackets",
+          "scope": "constant.language.checkbox.markdown-gfm",
+          "foreground": "$colors2S",
+          "font_style": "bold"
+        }
+    ]
+}
+EOF
+
+
+        # {
+        #   "name": "C++ stdint",
+        #   "scope": "source.c++ meta.function.c++ meta.block.c++ support.type.stdint.c",
+        #   "foreground": "$color1s"
+        # },
+        # {
+        #   "name": "C++ stdint arg",
+        #   "scope": "source.c++ meta.namespace.c++ meta.block.c++ meta.function.parameters.c++ meta.group.c++ support.type.stdint.c",
+        #   "foreground": "$color1s"
+        # },
+        # {
+        #   "name": "C++ member function",
+        #   "scope": "source.c++ meta.namespace.c++ meta.block.c++ meta.function.c++ meta.block.c++ meta.method-call.c++ variable.function.member.c++",
+        #   "foreground": "$color4S"
+        # },

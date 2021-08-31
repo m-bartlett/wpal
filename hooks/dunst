@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+pkill dunst
+# low, normal, critical
+&> /dev/null dunst \
+  -lb "$color0" \
+  -lf "$midground" \
+  -nb "$color0" \
+  -nf "$color15" \
+  -cb "$color0" \
+  -cf "$color15" \
+  -frame_color "$highlight" \
+  & disown

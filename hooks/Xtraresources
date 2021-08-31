@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# URxvt*background: [85]$color0
+
+# opacity=88
+# color0a="argb:${opacity}${color0#\#*}"
+
+xrdb -merge <(cat <<EOF
+URxvt*background: [100]$color0
+URxvt*borderColor: [100]$color0
+*fading: 20
+*fadeColor: $color0
+*cursorColor: $highlight
+*cursorColor2: $color6
+rofi.color-window: $color0, $color15
+rofi.color-normal: $color0, $color15, $color0L, $highlight, $color0
+rofi.color-active: $color0, $color15, $color0L, $color6, $color0
+rofi.color-urgent: $color0, $color15, $color0L, $color14, $color0
+EOF
+)
+
+pkill -SIGUSR1 urxvt
