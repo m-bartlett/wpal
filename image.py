@@ -96,7 +96,7 @@ def rgb2hex(rgb):
   try:
     rgb = [round(c) for c in rgb]
   except:
-    printerr(rgb)
+    print(rgb)
   return "#{0:02X}{1:02X}{2:02X}".format(*rgb)
 
 
@@ -151,7 +151,7 @@ def pretty_print_palette( *,
                           palette_separator="",
                           highlight_separator="  " ):
   for line in zip([base_colors,bold_colors], [[lowlight],[highlight]]):
-    printerr(
+    print(
       highlight_separator.join([
         palette_as_filled_blocks(group, block_content=block_content, separator=palette_separator)
         for group in line
@@ -169,22 +169,22 @@ def print_palette_preview(*, base_colors, bold_colors, highlight, lowlight):
   offset_width = (width - palette_info_width) // 2
   offset = " " * offset_width
 
-  printerr(
+  print(
     offset +
     ansi_colorize(" " + spacer + rgb2hex(bg) + spacer + " ", fg=highlight, bg=bg) + " " +
     ansi_colorize(" " + spacer + rgb2hex(fg) + spacer + " ", fg=lowlight, bg=fg)
   )
-  printerr()
+  print()
 
   colors = base_colors[1:-1].copy()
   colors[[1,2,3,4,5]] = colors[[2,1,5,3,4]]
-  printerr(offset + palette_as_foreground_on_background_ANSI_colors(colors, bg, separator=" "))
-  printerr(offset + palette_as_filled_blocks(colors, block_content=spacer, separator=" "))
+  print(offset + palette_as_foreground_on_background_ANSI_colors(colors, bg, separator=" "))
+  print(offset + palette_as_filled_blocks(colors, block_content=spacer, separator=" "))
 
   colors = bold_colors[1:-1].copy()
   colors[[1,2,3,4,5]] = colors[[2,1,5,3,4]]
-  printerr(offset + palette_as_filled_blocks(colors, block_content=spacer, separator=" "))
-  printerr(offset + palette_as_foreground_on_background_ANSI_colors(colors, bg, separator=" "))
+  print(offset + palette_as_filled_blocks(colors, block_content=spacer, separator=" "))
+  print(offset + palette_as_foreground_on_background_ANSI_colors(colors, bg, separator=" "))
 
 
 def filter_colors_in_ellipsoid_volume(pixels, ellipsoids=[]):
@@ -257,10 +257,12 @@ def constrain_contrast_between_foreground_and_background_colors(
       verbose=False,
     ):
 
+  if verbose:
+    print(f"\nIncreasing contrast to {minimum_contrast}")
+
   deltas = foreground_colors - background_color
   magnitudes = np.linalg.norm(deltas, axis=1)
   gradients = deltas / magnitudes[:, np.newaxis]
-
 
   light_background = background_color.mean() > foreground_colors.mean()
 
@@ -287,8 +289,8 @@ def constrain_contrast_between_foreground_and_background_colors(
     higher_contrast_colors = (_gradients * _new_magnitudes[:,np.newaxis]) + background_color
 
     if verbose:
-      printerr(f'{i}: {new_contrasts}->{minimum_contrast} ', end='')
-      printerr(
+      print(f'{i}: {new_contrasts}->{minimum_contrast} ', end='')
+      print(
         palette_as_foreground_on_background_ANSI_colors(
           foreground_colors=higher_contrast_colors,
           background_color=background_color,
@@ -311,6 +313,7 @@ def constrain_contrast_between_foreground_and_background_colors(
     indices_needing_more_contrast = indices_needing_more_contrast[contrast_unsatisfied_filter]
 
   return validate_rgb_palette(foreground_colors)
+
 
 
 class TerminalImagePreview(contextlib.AbstractContextManager):
@@ -339,9 +342,9 @@ class TerminalImagePreview(contextlib.AbstractContextManager):
 
 
   def __enter__(self):
-    printerr(
+    print(
       "\033[?1049h" # switch to secondary buffer
-      "\033[?25l"   # hide cursor
+      "\033[?25l"   # hide cursor flashing
       "\033[0H"     # move cursor to top left
       "\033[2J"     # clear entire screen
     )
@@ -358,8 +361,8 @@ class TerminalImagePreview(contextlib.AbstractContextManager):
 
 
   def __exit__(self, exc_type, exc_value, exc_traceback):
-    printerr(
-      "\033[?25h"   # show cursor
+    print(
+      "\033[?25h"   # show cursor flashing
       "\033[2J"     # clear entire screen
       "\033[?1049l" # switch back to primary buffer
     )

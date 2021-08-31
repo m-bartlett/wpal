@@ -5,11 +5,6 @@ import sys
 from pathlib import Path
 
 
-def printerr(*args, **kwargs):
-  kwargs['file']=sys.stderr
-  print(*args, **kwargs)
-
-
 def get_current_wallpaper():
   with Path("~/.config/nitrogen/bg-saved.cfg").expanduser().open('r') as wp_file:
     wp_file.readline()

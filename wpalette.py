@@ -18,6 +18,9 @@ VERBOSE_DEBUG  = args.verbose > 3
 
 np.set_printoptions(precision=3, suppress=True)
 
+if VERBOSE_HIGH:
+  print("\nArguments: " + ' '.join([f"{k}={v}" for k,v in args.__dict__.items()]))
+
 if args.wallpaper_picker:
   popen(args.wallpaper_picker)
 
@@ -27,7 +30,7 @@ else:
   wp_path = get_current_wallpaper()
 
 if VERBOSE_MEDIUM:
-  printerr(f"Using wallpaper: {wp_path}\n")
+  print(f"Using wallpaper: {wp_path}")
 
 wp=Image.open(wp_path).convert('RGB')
 wp.thumbnail((args.resize, args.resize), resample=Image.LANCZOS)
@@ -158,7 +161,7 @@ Xresource_colors = { color: rgb2hex(rgb) for color, rgb in Xresource_colors.item
 
 
 if VERBOSE_DEBUG:
-  printerr()
+  print()
   for color_name, color_hex in Xresource_colors.items():
     print(f"{color_name}={color_hex}")
 
@@ -175,8 +178,8 @@ if VERBOSE_MEDIUM:  # Show in-terminal image preview at higher verbosities
                              list(palettes),
                              [sorted_base_colors, sorted_bold_colors] ]:
         for palette in palette_batch:
-          printerr(palette_as_colorized_hexcodes(palette, separator=" "))
-        printerr()
+          print(palette_as_colorized_hexcodes(palette, separator=" "))
+        print()
 
     else:
 
@@ -190,7 +193,7 @@ if VERBOSE_MEDIUM:  # Show in-terminal image preview at higher verbosities
 
 
 if VERBOSE_LOW:
-  printerr()
+  print()
   pretty_print_palette( base_colors=base_colors,
                         bold_colors=bold_colors,
                         highlight=highlight,
@@ -199,7 +202,7 @@ if VERBOSE_LOW:
 
 if args.hooks is not None:
   if len(args.hooks) == 0:
-    hooks = list(map(str, (pathlib.Path(__file__).absolute().parent/'hooks').glob('*')))
+    hooks = list(map(str, (pathlib.Path(__file__).resolve(strict=True).parent/'hooks').glob('*')))
   else:
     hooks = [hook for hook in args.hooks if os.path.exists(hook)]
 
@@ -213,7 +216,7 @@ if args.hooks is not None:
   os.environ |= Xresource_colors
 
   if VERBOSE_DEBUG:
-    printerr(f"\nExecuting hooks:\n{chr(10).join(hooks)}")
+    print(f"\nExecuting hooks:\n{chr(10).join(hooks)}")
 
 
   # Execute all hooks concurrently in their own thread
@@ -222,4 +225,4 @@ if args.hooks is not None:
     processes = list(executor.map(popen, hooks))
     for p in processes:
       if p.returncode != 0:
-        printerr(f"WARNING: {p.args[0]} returned nonzero exit code.")
+        print(f"WARNING: {p.args[0]} returned nonzero exit code.")

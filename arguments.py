@@ -69,19 +69,19 @@ parser.add_argument(
   help="kmeans iteration quantity"
 )
 
-parser.add_argument(
-  "--no-op",
-  "-0",
-  action='store_true',
-  help="a no-op to use defaults without changing background image"
-)
+# parser.add_argument(
+#   "--no-op",
+#   "-0",
+#   action='store_true',
+#   help="a no-op to use defaults without changing background image"
+# )
 
 parser.add_argument(
   "--verbose",
   "-v",
   action='count',
   default=0,
-  help="print extra palette coloration to terminal, supply extra v's for more verbosity"
+  help="print extra processing information to terminal, supply extra v's for more verbosity"
 )
 
 parser.add_argument(
@@ -113,10 +113,3 @@ for k,v in defaults.items():
       setattr(args, k, v)
   except AttributeError:
     continue
-
-if args.verbose > 2:
-  import util
-  util.printerr(
-    "Arguments: " + ' '.join([f"{k}={v}" for k,v in args.__dict__.items()]),
-    end='\n\n'
-  )
