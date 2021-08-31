@@ -6,7 +6,6 @@ import subprocess
 import shlex
 import pathlib
 import os
-import tempfile
 
 from image import *
 from arguments import args
@@ -27,7 +26,7 @@ if args.file:
 else:
   wp_path = get_current_wallpaper()
 
-if args.verbose > 1:
+if VERBOSE_MEDIUM:
   printerr(f"Using wallpaper: {wp_path}\n")
 
 wp=Image.open(wp_path).convert('RGB')
@@ -74,7 +73,7 @@ if args.minimum_contrast:
       foreground_colors = foreground_colors,
       background_color = background_color,
       minimum_contrast = args.minimum_contrast,
-      verbose = args.verbose > 2
+      verbose = VERBOSE_HIGH
     )
   )
   initial_palette[1:-1] = higher_contrast_foreground_colors
@@ -138,30 +137,39 @@ sorted_bold_colors = bold_colors[color_order]
 
 
 # Print shell-declarable strings to stdout for consumption
-for n,c in {
-        **{ f"color{i}"   : c for i,c in enumerate(ansi_palette) },
-        **{ f"color{i}D"  : c for i,c in enumerate(palettes[0]) },
-        **{ f"color{i}d"  : c for i,c in enumerate(palettes[1]) },
-        **{ f"color{i}l"  : c for i,c in enumerate(palettes[3]) },
-        **{ f"color{i}L"  : c for i,c in enumerate(palettes[4]) },
-        **{ f"color{i+1}s": c for i,c in enumerate(sorted_base_colors) },
-        **{ f"color{i+1}S": c for i,c in enumerate(sorted_bold_colors) },
-        "highlight":highlight,
-        "lowlight":lowlight,
-        "midground":midground,
-        "highlight_fg":most_visible_foreground_color(highlight),
-      }.items():
 
-  print("{0}=#{1:02X}{2:02X}{3:02X}".format(n, *c))
+Xresource_colors = {
+  **{ f"color{i}"   : c for i,c in enumerate(ansi_palette) },
+  **{ f"color{i}D"  : c for i,c in enumerate(palettes[0]) },
+  **{ f"color{i}d"  : c for i,c in enumerate(palettes[1]) },
+  **{ f"color{i}l"  : c for i,c in enumerate(palettes[3]) },
+  **{ f"color{i}L"  : c for i,c in enumerate(palettes[4]) },
+  **{ f"color{i+1}s": c for i,c in enumerate(sorted_base_colors) },
+  **{ f"color{i+1}S": c for i,c in enumerate(sorted_bold_colors) },
+  "background": ansi_palette[0],
+  "midground":  midground,
+  "foreground": ansi_palette[15],
+  "highlight":  highlight,
+  "lowlight":   lowlight,
+}
+
+# Convert all RGB arrays to hexidecimal strings
+Xresource_colors = { color: rgb2hex(rgb) for color, rgb in Xresource_colors.items() }
 
 
-if args.verbose > 1:  # Show in-terminal image preview at high verbosity
+if VERBOSE_DEBUG:
+  printerr()
+  for color_name, color_hex in Xresource_colors.items():
+    print(f"{color_name}={color_hex}")
+
+
+if VERBOSE_MEDIUM:  # Show in-terminal image preview at higher verbosities
 
   with TerminalImagePreview(wp) as preview:
     from time import sleep
     sleep(0.05)
 
-    if args.verbose > 3:
+    if VERBOSE_DEBUG:
 
       for palette_batch in [ [ANSI]+[base_colors,bold_colors]+[[highlight, lowlight]],
                              list(palettes),
@@ -180,11 +188,38 @@ if args.verbose > 1:  # Show in-terminal image preview at high verbosity
     if sys.stdin.read(1) == "\x1b": # If ESC is pressed, exit failure
       sys.exit(1)
 
-if args.verbose > 0:
+
+if VERBOSE_LOW:
+  printerr()
   pretty_print_palette( base_colors=base_colors,
                         bold_colors=bold_colors,
                         highlight=highlight,
                         lowlight=lowlight )
 
 
-  # from concurrent.futures import ThreadPoolExecutor
+if args.hooks is not None:
+  if len(args.hooks) == 0:
+    hooks = list(map(str, (pathlib.Path(__file__).absolute().parent/'hooks').glob('*')))
+  else:
+    hooks = [hook for hook in args.hooks if os.path.exists(hook)]
+
+  from Xresources import xrdb_merge
+  p = xrdb_merge(Xresource_colors)
+  if p.returncode != 0:
+    raise RuntimeError(f"xrdb merge did not exit successfully: {p.stderr}")
+
+
+  # Export colors as hexidemical to the environment
+  os.environ |= Xresource_colors
+
+  if VERBOSE_DEBUG:
+    printerr(f"\nExecuting hooks:\n{chr(10).join(hooks)}")
+
+
+  # Execute all hooks concurrently in their own thread
+  from concurrent.futures import ThreadPoolExecutor
+  with ThreadPoolExecutor() as executor:
+    processes = list(executor.map(popen, hooks))
+    for p in processes:
+      if p.returncode != 0:
+        printerr(f"WARNING: {p.args[0]} returned nonzero exit code.")

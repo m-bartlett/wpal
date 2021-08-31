@@ -87,8 +87,8 @@ parser.add_argument(
 parser.add_argument(
   "--hooks",
   "-H",
-  action='store',
   nargs='*',
+  # default=True,
   help="execute hook scripts after exporting color information to the environment and Xresources"
 )
 

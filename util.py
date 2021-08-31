@@ -38,10 +38,11 @@ def get_terminal_size():
     return int(cr[1]), int(cr[0])
 
 
-def popen(cmdline, stdin=None):
+def popen(cmdline, stdin=None, **kwargs):
   if isinstance(stdin, str): stdin=stdin.encode()
   return subprocess.run(
     shlex.split(cmdline),
     input=stdin,
-    capture_output=True
+    capture_output=True,
+    **kwargs
   )
