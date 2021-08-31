@@ -93,11 +93,7 @@ def validate_rgb_palette(palette):
 
 
 def rgb2hex(rgb):
-  try:
-    rgb = [round(c) for c in rgb]
-  except:
-    print(rgb)
-  return "#{0:02X}{1:02X}{2:02X}".format(*rgb)
+  return "#{0:02X}{1:02X}{2:02X}".format(*(round(c) for c in rgb))
 
 
 def ansi_colorize(message, fg='', bg=''):

@@ -30,7 +30,7 @@ else:
   wp_path = get_current_wallpaper()
 
 if VERBOSE_MEDIUM:
-  print(f"Using wallpaper: {wp_path}")
+  print(f"\nUsing wallpaper: {wp_path}")
 
 wp=Image.open(wp_path).convert('RGB')
 wp.thumbnail((args.resize, args.resize), resample=Image.LANCZOS)
@@ -103,8 +103,9 @@ palettes = (
 middle_palette_index = (middle_palette_index:=len(palettes))//2 + (middle_palette_index & 1)
 
 
-# Sort using deterministic psuedo-random ordering based on file hash
 if args.random_color_order:
+  # Sort using deterministic psuedo-random ordering based on file hash
+
   import hashlib
   # seed=int(hashlib.sha256(open(wp_path,'rb').read()).hexdigest(), 16) % 4294967295
   seed=int(hashlib.sha256(args.random_color_order.encode()).hexdigest(), 16) % 4294967295
@@ -113,7 +114,7 @@ if args.random_color_order:
   np.random.shuffle(color_order)
 
 else:
-  # sort by cluster sizes descending from k-means
+  # Sort by cluster sizes descending from k-means
   color_order = ANSI_indices_sorted_by_neighbor_quantity
 
 
@@ -139,8 +140,7 @@ sorted_base_colors = base_colors[color_order]
 sorted_bold_colors = bold_colors[color_order]
 
 
-# Print shell-declarable strings to stdout for consumption
-
+# Map Xresource color name to RGB tuple
 Xresource_colors = {
   **{ f"color{i}"   : c for i,c in enumerate(ansi_palette) },
   **{ f"color{i}D"  : c for i,c in enumerate(palettes[0]) },
@@ -156,7 +156,7 @@ Xresource_colors = {
   "lowlight":   lowlight,
 }
 
-# Convert all RGB arrays to hexidecimal strings
+# Convert all RGB tuples to hexidecimal strings
 Xresource_colors = { color: rgb2hex(rgb) for color, rgb in Xresource_colors.items() }
 
 
@@ -174,7 +174,8 @@ if VERBOSE_MEDIUM:  # Show in-terminal image preview at higher verbosities
 
     if VERBOSE_DEBUG:
 
-      for palette_batch in [ [ANSI]+[base_colors,bold_colors]+[[highlight, lowlight]],
+      for palette_batch in [ [ANSI],
+                             [base_colors,bold_colors]+[[highlight, lowlight]],
                              list(palettes),
                              [sorted_base_colors, sorted_bold_colors] ]:
         for palette in palette_batch:
@@ -188,7 +189,8 @@ if VERBOSE_MEDIUM:  # Show in-terminal image preview at higher verbosities
                              highlight=highlight,
                              lowlight=lowlight )
 
-    if sys.stdin.read(1) == "\x1b": # If ESC is pressed, exit failure
+    _input = sys.stdin.read(1)
+    if _input in ["q", "\x1b"]: # If ESC or q is pressed, exit failure
       sys.exit(1)
 
 
