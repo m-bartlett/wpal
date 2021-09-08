@@ -3,7 +3,7 @@
 cat <<EOF > $HOME/.config/sublime-text/Packages/User/xresources.sublime-color-scheme
 {
     "name": "XResources",
-    "author": "Michael Bartlett",
+    "author": "M B",
     "globals": {
         "accent" /*modified tab*/       : "$highlight",
         "active_guide" /*indent line*/  : "$lowlight",

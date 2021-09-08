@@ -9,7 +9,6 @@ import termios
 
 np.set_printoptions(precision=3, suppress=True)
 
-
 BLACK=np.array([0,0,0])
 WHITE=np.array([255,255,255])
 
@@ -147,7 +146,7 @@ def pretty_print_palette( *,
                           palette_separator="",
                           highlight_separator="  " ):
   for line in zip([base_colors,bold_colors], [[lowlight],[highlight]]):
-    print(
+    debug(
       highlight_separator.join([
         palette_as_filled_blocks(group, block_content=block_content, separator=palette_separator)
         for group in line
@@ -165,22 +164,22 @@ def print_palette_preview(*, base_colors, bold_colors, highlight, lowlight):
   offset_width = (width - palette_info_width) // 2
   offset = " " * offset_width
 
-  print(
+  debug(
     offset +
     ansi_colorize(" " + spacer + rgb2hex(bg) + spacer + " ", fg=highlight, bg=bg) + " " +
     ansi_colorize(" " + spacer + rgb2hex(fg) + spacer + " ", fg=lowlight, bg=fg)
   )
-  print()
+  debug()
 
   colors = base_colors[1:-1].copy()
   colors[[1,2,3,4,5]] = colors[[2,1,5,3,4]]
-  print(offset + palette_as_foreground_on_background_ANSI_colors(colors, bg, separator=" "))
-  print(offset + palette_as_filled_blocks(colors, block_content=spacer, separator=" "))
+  debug(offset + palette_as_foreground_on_background_ANSI_colors(colors, bg, separator=" "))
+  debug(offset + palette_as_filled_blocks(colors, block_content=spacer, separator=" "))
 
   colors = bold_colors[1:-1].copy()
   colors[[1,2,3,4,5]] = colors[[2,1,5,3,4]]
-  print(offset + palette_as_filled_blocks(colors, block_content=spacer, separator=" "))
-  print(offset + palette_as_foreground_on_background_ANSI_colors(colors, bg, separator=" "))
+  debug(offset + palette_as_filled_blocks(colors, block_content=spacer, separator=" "))
+  debug(offset + palette_as_foreground_on_background_ANSI_colors(colors, bg, separator=" "))
 
 
 def filter_colors_in_ellipsoid_volume(pixels, ellipsoids=[]):
@@ -253,9 +252,6 @@ def constrain_contrast_between_foreground_and_background_colors(
       verbose=False,
     ):
 
-  if verbose:
-    print(f"\nIncreasing contrast to {minimum_contrast}")
-
   deltas = foreground_colors - background_color
   magnitudes = np.linalg.norm(deltas, axis=1)
   gradients = deltas / magnitudes[:, np.newaxis]
@@ -273,26 +269,31 @@ def constrain_contrast_between_foreground_and_background_colors(
   new_magnitudes = (magnitudes / contrasts) * minimum_contrast
   converge_steps = new_magnitudes.copy()
   indices_needing_more_contrast = np.arange(foreground_colors.shape[0])[contrasts < minimum_contrast]
+  if indices_needing_more_contrast.size < 1:
+    max_iterations = 0
   new_contrasts = contrasts.copy()[indices_needing_more_contrast]
+  higher_contrast_colors = foreground_colors.copy()[indices_needing_more_contrast]
+
+  if verbose:
+    debug(f"\nIncreasing contrast to {minimum_contrast}")
 
   for i in range(max_iterations):
-    if indices_needing_more_contrast.size < 1:
-      break
-
-    _gradients = gradients[indices_needing_more_contrast]
-    _new_magnitudes = new_magnitudes[indices_needing_more_contrast]
-
-    higher_contrast_colors = (_gradients * _new_magnitudes[:,np.newaxis]) + background_color
-
     if verbose:
-      print(f'{i}: {new_contrasts}->{minimum_contrast} ', end='')
-      print(
+      debug(f'{i}: {new_contrasts}->{minimum_contrast} ', end='')
+      debug(
         palette_as_foreground_on_background_ANSI_colors(
           foreground_colors=higher_contrast_colors,
           background_color=background_color,
           separator=" "
         )
       )
+
+    if indices_needing_more_contrast.size < 1:  break
+
+    _gradients = gradients[indices_needing_more_contrast]
+    _new_magnitudes = new_magnitudes[indices_needing_more_contrast]
+
+    higher_contrast_colors = (_gradients * _new_magnitudes[:,np.newaxis]) + background_color
 
     new_contrasts = np.apply_along_axis(_contrast, axis=1, arr=higher_contrast_colors)
     undershot_filter = new_contrasts < minimum_contrast
@@ -321,6 +322,14 @@ class TerminalImagePreview(contextlib.AbstractContextManager):
 
   W3M_IMGDISPLAY_BIN = "/usr/lib/w3m/w3mimgdisplay"
 
+  # If stderr is redirected, don't display a terminal image preview
+  def __new__(_class, *args, **kwargs):
+    if os.isatty(sys.stderr.fileno()):
+      return super(TerminalImagePreview, _class).__new__(_class)
+    else:
+      return None
+
+
   def __init__(self, image):
     self.image = image
     super().__init__()
@@ -338,7 +347,7 @@ class TerminalImagePreview(contextlib.AbstractContextManager):
 
 
   def __enter__(self):
-    print(
+    debug(
       "\033[?1049h" # switch to secondary buffer
       "\033[?25l"   # hide cursor flashing
       "\033[0H"     # move cursor to top left
@@ -357,7 +366,7 @@ class TerminalImagePreview(contextlib.AbstractContextManager):
 
 
   def __exit__(self, exc_type, exc_value, exc_traceback):
-    print(
+    debug(
       "\033[?25h"   # show cursor flashing
       "\033[2J"     # clear entire screen
       "\033[?1049l" # switch back to primary buffer

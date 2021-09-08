@@ -8,8 +8,9 @@ import pathlib
 import os
 
 from image import *
-from arguments import args
-from kmeans import *
+from options import args, config, config_file, config_defaults
+from kmeans import kmeans
+from util import EXECUTABLE_DIRECTORY
 
 VERBOSE_DEBUG  = args.verbose > 3
 VERBOSE_HIGH   = VERBOSE_DEBUG or args.verbose > 2
@@ -19,7 +20,11 @@ VERBOSE_LOW    = VERBOSE_MEDIUM or args.verbose > 0
 np.set_printoptions(precision=3, suppress=True)
 
 if VERBOSE_HIGH:
-  print("\nArguments: " + ' '.join([f"{k}={v}" for k,v in args.__dict__.items()]))
+  if config_file:
+    debug(f"Configuration loaded from {config_file}:")
+    for key, value in config_defaults.items():
+      debug(f"\t{key}={value}")
+  debug("\nArguments: " + ' '.join([f"{k}={v}" for k,v in args.__dict__.items()]))
 
 if args.wallpaper_picker:
   popen(args.wallpaper_picker)
@@ -30,7 +35,7 @@ else:
   wp_path = get_current_wallpaper()
 
 if VERBOSE_MEDIUM:
-  print(f"\nUsing wallpaper: {wp_path}")
+  debug(f"\nUsing wallpaper: {wp_path}")
 
 wp=Image.open(wp_path).convert('RGB')
 wp.thumbnail((args.resize, args.resize), resample=Image.LANCZOS)
@@ -161,7 +166,7 @@ Xresource_colors = { color: rgb2hex(rgb) for color, rgb in Xresource_colors.item
 
 
 if VERBOSE_DEBUG:
-  print()
+  debug()
   for color_name, color_hex in Xresource_colors.items():
     print(f"{color_name}={color_hex}")
 
@@ -179,8 +184,8 @@ if VERBOSE_MEDIUM:  # Show in-terminal image preview at higher verbosities
                              list(palettes),
                              [sorted_base_colors, sorted_bold_colors] ]:
         for palette in palette_batch:
-          print(palette_as_colorized_hexcodes(palette, separator=" "))
-        print()
+          debug(palette_as_colorized_hexcodes(palette, separator=" "))
+        debug()
 
     else:
 
@@ -195,7 +200,7 @@ if VERBOSE_MEDIUM:  # Show in-terminal image preview at higher verbosities
 
 
 if VERBOSE_LOW:
-  print()
+  debug()
   pretty_print_palette( base_colors=base_colors,
                         bold_colors=bold_colors,
                         highlight=highlight,
@@ -204,7 +209,7 @@ if VERBOSE_LOW:
 
 if args.hooks is not None:
   if len(args.hooks) == 0:
-    hooks = list(map(str, (pathlib.Path(__file__).resolve(strict=True).parent/'hooks').glob('*')))
+    hooks = list(map(str, (EXECUTABLE_DIRECTORY/'hooks').glob('*')))
   else:
     hooks = [hook for hook in args.hooks if os.path.exists(hook)]
 
@@ -218,7 +223,7 @@ if args.hooks is not None:
   os.environ |= Xresource_colors
 
   if VERBOSE_DEBUG:
-    print(f"\nExecuting hooks:\n{chr(10).join(hooks)}")
+    debug(f"\nExecuting hooks:\n{chr(10).join(hooks)}")
 
 
   # Execute all hooks concurrently in their own thread
@@ -226,5 +231,7 @@ if args.hooks is not None:
   with ThreadPoolExecutor() as executor:
     processes = list(executor.map(popen, hooks))
     for p in processes:
+      if VERBOSE_HIGH:
+        debug(f"Executed {p.args[0]}")
       if p.returncode != 0:
-        print(f"WARNING: {p.args[0]} returned nonzero exit code.")
+        debug(f"WARNING: {p.args[0]} returned nonzero exit code.")

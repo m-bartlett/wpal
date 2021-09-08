@@ -11,10 +11,6 @@ URxvt*borderColor: [100]$color0
 *fadeColor: $color0
 *cursorColor: $highlight
 *cursorColor2: $color6
-rofi.color-window: $color0, $color15
-rofi.color-normal: $color0, $color15, $color0L, $highlight, $color0
-rofi.color-active: $color0, $color15, $color0L, $color6, $color0
-rofi.color-urgent: $color0, $color15, $color0L, $color14, $color0
 EOF
 )
 

@@ -1,14 +1,9 @@
 import argparse
-
-
-defaults = {
-  "iterations": 3,
-  "resize": 250,
-  "blur_radius": 0.5,
-  "minimum_contrast": 50,
-  # light_minimum_contrast: 50,
-  # dark_minimum_contrast: 30
-}
+import configparser
+import os
+from pathlib import Path
+from types import SimpleNamespace
+from util import popen, EXECUTABLE_DIRECTORY, EXECUTABLE_NAME
 
 
 parser = argparse.ArgumentParser()
@@ -17,6 +12,8 @@ parser.add_argument(
   "--wallpaper-picker",
   "-W",
   type=str,
+  default="",
+  nargs='?',
   help="launch argument executable as a process and wait for it to exit before generating a wallpaper (intended for interactive wallpaper selectors)"
 )
 
@@ -24,6 +21,8 @@ parser.add_argument(
   "--file",
   "-f",
   type=str,
+  default="",
+  nargs='?',
   help="path to desired image to run palette generation on"
 )
 
@@ -69,13 +68,6 @@ parser.add_argument(
   help="kmeans iteration quantity"
 )
 
-# parser.add_argument(
-#   "--no-op",
-#   "-0",
-#   action='store_true',
-#   help="a no-op to use defaults without changing background image"
-# )
-
 parser.add_argument(
   "--verbose",
   "-v",
@@ -86,7 +78,7 @@ parser.add_argument(
 
 parser.add_argument(
   "--hooks",
-  "-H",
+  "-x",
   nargs='*',
   # default=True,
   help="execute hook scripts after exporting color information to the environment and Xresources"
@@ -106,6 +98,38 @@ parser.add_argument(
 
 
 args = parser.parse_args()
+
+
+defaults = {
+  "iterations": 3,
+  "resize": 250,
+  "blur_radius": 0.5,
+  "minimum_contrast": 50,
+}
+
+config = configparser.ConfigParser()
+home = Path("~").expanduser()
+config_home = Path(os.getenv('XDG_CONFIG_HOME', "~/.config")).expanduser() / EXECUTABLE_NAME
+
+config_file_locations = [
+  config_home/'config.ini',
+  home/f'.{EXECUTABLE_NAME}',
+  EXECUTABLE_DIRECTORY/'config.ini'
+]
+
+for config_file in config_file_locations:
+  if config_file.exists():
+    config.read(config_file)
+    config_defaults = config['default']
+    for option in defaults.keys():
+      value = config_defaults.getfloat(option, defaults[option])
+      try:
+        if value.is_integer(): value = int(value)
+        defaults[option] = value
+        del config_defaults[option]
+      except:
+        defaults[option] = value
+    break
 
 for k,v in defaults.items():
   try:
