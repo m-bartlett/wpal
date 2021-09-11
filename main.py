@@ -21,10 +21,10 @@ np.set_printoptions(precision=3, suppress=True)
 
 if VERBOSE_HIGH:
   if config_file:
-    debug(f"Configuration loaded from {config_file}:")
+    info(f"Configuration loaded from {config_file}:")
     for key, value in config_defaults.items():
-      debug(f"\t{key}={value}")
-  debug("\nArguments: " + ' '.join([f"{k}={v}" for k,v in args.__dict__.items()]))
+      info(f"\t{key}={value}")
+  info("\nArguments: " + ' '.join([f"{k}={v}" for k,v in args.__dict__.items()]))
 
 if args.wallpaper_picker:
   popen(args.wallpaper_picker)
@@ -35,7 +35,7 @@ else:
   wp_path = get_current_wallpaper()
 
 if VERBOSE_MEDIUM:
-  debug(f"\nUsing wallpaper: {wp_path}")
+  info(f"\nUsing wallpaper: {wp_path}")
 
 wp=Image.open(wp_path).convert('RGB')
 wp.thumbnail((args.resize, args.resize), resample=Image.LANCZOS)
@@ -166,7 +166,7 @@ Xresource_colors = { color: rgb2hex(rgb) for color, rgb in Xresource_colors.item
 
 
 if VERBOSE_DEBUG:
-  debug()
+  info()
   for color_name, color_hex in Xresource_colors.items():
     print(f"{color_name}={color_hex}")
 
@@ -184,8 +184,8 @@ if VERBOSE_MEDIUM:  # Show in-terminal image preview at higher verbosities
                              list(palettes),
                              [sorted_base_colors, sorted_bold_colors] ]:
         for palette in palette_batch:
-          debug(palette_as_colorized_hexcodes(palette, separator=" "))
-        debug()
+          info(palette_as_colorized_hexcodes(palette, separator=" "))
+        info()
 
     else:
 
@@ -200,7 +200,7 @@ if VERBOSE_MEDIUM:  # Show in-terminal image preview at higher verbosities
 
 
 if VERBOSE_LOW:
-  debug()
+  info()
   pretty_print_palette( base_colors=base_colors,
                         bold_colors=bold_colors,
                         highlight=highlight,
@@ -223,7 +223,7 @@ if args.hooks is not None:
   os.environ |= Xresource_colors
 
   if VERBOSE_DEBUG:
-    debug(f"\nExecuting hooks:\n{chr(10).join(hooks)}")
+    info(f"\nExecuting hooks:\n{chr(10).join(hooks)}")
 
 
   # Execute all hooks concurrently in their own thread
@@ -232,6 +232,6 @@ if args.hooks is not None:
     processes = list(executor.map(popen, hooks))
     for p in processes:
       if VERBOSE_HIGH:
-        debug(f"Executed {p.args[0]}")
+        info(f"Executed {p.args[0]}")
       if p.returncode != 0:
-        debug(f"WARNING: {p.args[0]} returned nonzero exit code.")
+        info(f"WARNING: {p.args[0]} returned nonzero exit code.")

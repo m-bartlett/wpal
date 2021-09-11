@@ -7,7 +7,7 @@ from pathlib import Path
 EXECUTABLE_DIRECTORY = Path(__file__).resolve(strict=True).parent
 EXECUTABLE_NAME = EXECUTABLE_DIRECTORY.name
 
-def debug(*args, **kwargs):
+def info(*args, **kwargs):
     kwargs['file']=sys.stderr
     print(*args, **kwargs)
 

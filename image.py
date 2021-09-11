@@ -146,7 +146,7 @@ def pretty_print_palette( *,
                           palette_separator="",
                           highlight_separator="  " ):
   for line in zip([base_colors,bold_colors], [[lowlight],[highlight]]):
-    debug(
+    info(
       highlight_separator.join([
         palette_as_filled_blocks(group, block_content=block_content, separator=palette_separator)
         for group in line
@@ -164,22 +164,35 @@ def print_palette_preview(*, base_colors, bold_colors, highlight, lowlight):
   offset_width = (width - palette_info_width) // 2
   offset = " " * offset_width
 
-  debug(
+  info(
     offset +
     ansi_colorize(" " + spacer + rgb2hex(bg) + spacer + " ", fg=highlight, bg=bg) + " " +
     ansi_colorize(" " + spacer + rgb2hex(fg) + spacer + " ", fg=lowlight, bg=fg)
   )
-  debug()
+  info()
 
-  colors = base_colors[1:-1].copy()
-  colors[[1,2,3,4,5]] = colors[[2,1,5,3,4]]
-  debug(offset + palette_as_foreground_on_background_ANSI_colors(colors, bg, separator=" "))
-  debug(offset + palette_as_filled_blocks(colors, block_content=spacer, separator=" "))
+  base_foreground_colors = base_colors[1:-1].copy()[[0,2,1,5,3,4]]
+  info(offset + palette_as_foreground_on_background_ANSI_colors(base_foreground_colors, bg, separator=" "))
+  info(offset + palette_as_filled_blocks(base_foreground_colors, block_content=spacer, separator=" "))
 
-  colors = bold_colors[1:-1].copy()
-  colors[[1,2,3,4,5]] = colors[[2,1,5,3,4]]
-  debug(offset + palette_as_filled_blocks(colors, block_content=spacer, separator=" "))
-  debug(offset + palette_as_foreground_on_background_ANSI_colors(colors, bg, separator=" "))
+  bold_foreground_colors = bold_colors[1:-1].copy()[[0,2,1,5,3,4]]
+  info(offset + palette_as_filled_blocks(bold_foreground_colors, block_content=spacer, separator=" "))
+  info(offset + palette_as_foreground_on_background_ANSI_colors(bold_foreground_colors, bg, separator=" "))
+
+  # codeblock_json_keys = ['"red":   ', '"yellow":', '"green": ', '"cyan":  ', '"blue":  ', '"purple":' ]
+  # codeblock_json_key_width = (max(map(len, codeblock_json_keys)) + spacer_width) // 2 + 3
+  # codeblock_offset = ' ' * codeblock_json_key_width
+  # codeblock_offset_colored = ansi_colorize(codeblock_offset, bg=bg, fg=fg)
+
+  # info()
+  # info(offset + ansi_colorize("{" + (" "*46), fg=fg, bg=bg))
+  # for i, key in enumerate(codeblock_json_keys):
+  #   key = ansi_colorize(key, fg=base_foreground_colors[i], bg=bg)
+  #   bold_value = bold_foreground_colors[i]
+  #   value = ansi_colorize(rgb2hex(bold_value), fg=bold_value, bg=bg)
+  #   line_string = f'{key} "{value}",'
+  #   info(offset + codeblock_offset_colored + line_string)
+  # info(offset + ansi_colorize("}" + (" "*46), fg=fg, bg=bg))
 
 
 def filter_colors_in_ellipsoid_volume(pixels, ellipsoids=[]):
@@ -275,18 +288,17 @@ def constrain_contrast_between_foreground_and_background_colors(
   higher_contrast_colors = foreground_colors.copy()[indices_needing_more_contrast]
 
   if verbose:
-    debug(f"\nIncreasing contrast to {minimum_contrast}")
+    info(f"\nIncreasing foreground color contrasts to {minimum_contrast}")
 
   for i in range(max_iterations):
     if verbose:
-      debug(f'{i}: {new_contrasts}->{minimum_contrast} ', end='')
-      debug(
-        palette_as_foreground_on_background_ANSI_colors(
-          foreground_colors=higher_contrast_colors,
-          background_color=background_color,
-          separator=" "
-        )
-      )
+      colorized_contrasts = [
+        ansi_colorize(f'{contrast:0.2f}', fg=color, bg=background_color)
+        for contrast, color
+        in zip(new_contrasts, validate_rgb_palette(higher_contrast_colors))
+      ]
+      colorized_contrast_string = ' '.join(colorized_contrasts)
+      info(f'{i}: {colorized_contrast_string}')
 
     if indices_needing_more_contrast.size < 1:  break
 
@@ -347,7 +359,7 @@ class TerminalImagePreview(contextlib.AbstractContextManager):
 
 
   def __enter__(self):
-    debug(
+    info(
       "\033[?1049h" # switch to secondary buffer
       "\033[?25l"   # hide cursor flashing
       "\033[0H"     # move cursor to top left
@@ -366,7 +378,7 @@ class TerminalImagePreview(contextlib.AbstractContextManager):
 
 
   def __exit__(self, exc_type, exc_value, exc_traceback):
-    debug(
+    info(
       "\033[?25h"   # show cursor flashing
       "\033[2J"     # clear entire screen
       "\033[?1049l" # switch back to primary buffer

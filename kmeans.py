@@ -2,11 +2,22 @@ from image import ANSI, np
 
 def kmeans(pixels, iterations=3):
 
-  iterations = max(iterations, 1)
-
   # For this usage of k-means, k = 8 always as there are 8 ANSI colors to create clusters for
 
   cluster_centers = ANSI.copy()
+
+  if iterations < 1:  # Return the literal pixel in the image that is closest to each ANSI color if no kmeans
+
+    # calculate distance between each pixel and each ANSI color
+    distances = ( (cluster_centers - pixels[:, np.newaxis])**2 ).sum(axis=2)
+
+    # Return indices of each ANSI color's closest neighbor pixel
+    indices_of_closest_pixel_to_each_ANSI = np.argmin(distances, axis=0)
+
+    # Substitute the actual rgb-arrays for the corresponding pixel index
+    cluster_centers = pixels[indices_of_closest_pixel_to_each_ANSI]
+
+    closest_ANSI_index_per_pixel = np.argmin(distances, axis=1 )
 
   for i in range(iterations):
 
