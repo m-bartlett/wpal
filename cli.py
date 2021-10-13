@@ -1,9 +1,16 @@
 import argparse
-import configparser
-import os
-from pathlib import Path
-from types import SimpleNamespace
-from util import popen, EXECUTABLE_DIRECTORY, EXECUTABLE_NAME
+from image import ANSI_color_names
+from config import default_args
+
+
+# Configuration priority:
+# - CLI args
+# - parsed config from serialized image metadata ONLY IF --load is supplied
+# - config.ini:
+#   - ~/.config/${EXECUTABLE_NAME}/config.ini
+#   - ~/.${EXECUTABLE_NAME}
+#   - $EXECUTABLE_DIRECTORY/config.ini
+# - source-code defaults
 
 
 parser = argparse.ArgumentParser()
@@ -84,54 +91,32 @@ parser.add_argument(
   help="execute hook scripts after exporting color information to the environment and Xresources"
 )
 
-# parser.add_argument(
-#   "--load",
-#   "-L",
-#   action='store_true',
-#   help="load steganographic configuration baked in the image's bytes"
-# )
+parser.add_argument(
+  "--load",
+  "-L",
+  action='store_true',
+  help="save given options and palette output for a given image into its metadata "
+)
 
-# parser.add_argument(
-#   "--save", "-S", action='store_true',
-#   help="bake current configuration into the image's bytes"
-# )
+parser.add_argument(
+  "--save",
+  "-S",
+  action='store_true',
+  help="parse image metadata for palette configuration"
+)
+
+for color_name in ANSI_color_names:
+  parser.add_argument(
+    f"--{color_name}",
+    type=str,
+    help=f"specify the kmeans initial cluster color representing {color_name}"
+  )
 
 
 args = parser.parse_args()
 
-
-defaults = {
-  "iterations": 3,
-  "resize": 250,
-  "blur_radius": 0.5,
-  "minimum_contrast": 50,
-}
-
-config = configparser.ConfigParser()
-home = Path("~").expanduser()
-config_home = Path(os.getenv('XDG_CONFIG_HOME', "~/.config")).expanduser() / EXECUTABLE_NAME
-
-config_file_locations = [
-  config_home/'config.ini',
-  home/f'.{EXECUTABLE_NAME}',
-  EXECUTABLE_DIRECTORY/'config.ini'
-]
-
-for config_file in config_file_locations:
-  if config_file.exists():
-    config.read(config_file)
-    config_defaults = config['default']
-    for option in defaults.keys():
-      value = config_defaults.getfloat(option, defaults[option])
-      try:
-        if value.is_integer(): value = int(value)
-        defaults[option] = value
-        del config_defaults[option]
-      except:
-        defaults[option] = value
-    break
-
-for k,v in defaults.items():
+# CLI flag values take priority over config
+for k,v in default_args.items():
   try:
     if getattr(args, k) is None:
       setattr(args, k, v)

@@ -1,0 +1,11 @@
+- better config
+  - fails on missing section
+  - maybe just iterate .sections()?
+  - how to handle wallpaper-picker-default and wallpaper-path-command?
+
+- different minimum contrast for light and dark, also in config.ini
+
+- exif only stores base and bold colors, re-derives 5-palette
+
+- main -> __main__ and update symlink
+

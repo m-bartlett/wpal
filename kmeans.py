@@ -1,10 +1,10 @@
-from image import ANSI, np
+from image import np
 
-def kmeans(pixels, iterations=3):
+def kmeans(initial_cluster_centers, pixels, iterations=3):
 
   # For this usage of k-means, k = 8 always as there are 8 ANSI colors to create clusters for
 
-  cluster_centers = ANSI.copy()
+  cluster_centers = initial_cluster_centers.copy()
 
   if iterations < 1:  # Return the literal pixel in the image that is closest to each ANSI color if no kmeans
 
@@ -35,11 +35,11 @@ def kmeans(pixels, iterations=3):
     # Prevent not having any pixels being "closest" to a particular ANSI color
     pixels = np.concatenate([pixels, pixels[indices_of_closest_pixel_to_each_ANSI] ] )
     closest_ANSI_index_per_pixel = (
-      np.concatenate([closest_ANSI_index_per_pixel, np.arange(ANSI.shape[0]) ] )
+      np.concatenate([closest_ANSI_index_per_pixel, np.arange(initial_cluster_centers.shape[0]) ] )
     )
 
     average_of_each_ANSIs_closest_neighbors = (
-      np.array([ pixels[closest_ANSI_index_per_pixel==i].mean(axis=0) for i in range(ANSI.shape[0]) ])
+      np.array([ pixels[closest_ANSI_index_per_pixel==i].mean(axis=0) for i in range(initial_cluster_centers.shape[0]) ])
     )
 
     cluster_centers = average_of_each_ANSIs_closest_neighbors

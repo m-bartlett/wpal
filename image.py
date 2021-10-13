@@ -1,58 +1,31 @@
 import numpy as np
 import contextlib
+import tempfile
+import termios
+import re
 from util import *
 from PIL import Image, ImageFilter
 from colorsys import hsv_to_rgb, rgb_to_hsv
-import tempfile
-import termios
 
 
 np.set_printoptions(precision=3, suppress=True)
 
+RGB_STRING_REGEX = re.compile(r'rgba?\((\d+),(\d+),(\d+)(?:,\d+)?\)')
+HEX_STRING_REGEX = re.compile(r'(?:0[xX]|#)?([0-9a-fA-F]{3,8})')
+
 BLACK=np.array([0,0,0])
 WHITE=np.array([255,255,255])
-
-ANSI = np.uint8(
-  [
-    list(map(int, c.partition('(')[2][:-1].split(',')))  # this is to trick my editor to show the colors
-    for c in [
-
-      "rgb(15,15,15)",
-      "rgb(220,75,95)",
-      # "rgb(75,220,75)",
-      "rgb(00,180,80)",
-      # "rgb(220,180,75)",
-      # "rgb(255,120,0)",
-      "rgb(237,150,37)",
-      "rgb(75,100,220)",
-      "rgb(120,75,220)",
-      "rgb(75,170,220)",
-      "rgb(220,220,220)"
-
-      # # Muted
-      # "rgb(40,40,40)",
-      # "rgb(220,75,75)",
-      # "rgb(00,180,80)",
-      # "rgb(255,120,0)",
-      # "rgb(80,120,220)",
-      # "rgb(140,82,162)",
-      # "rgb(90, 165, 185)",
-      # "rgb(200,200,200)"
-
-      # # Hybrid
-      # "rgb(15,15,15)",
-      # # "rgb(188,0,9)",
-      # "rgb(255,0,0)",
-      # "rgb(50,255,50)",
-      # "rgb(255,120,0)",
-      # "rgb(0,100,255)",
-      # "rgb(140,0,255)",
-      # "rgb(0,170,200)",
-      # "rgb(215,215,215)"
-
-    ]
-  ]
-)
+ANSI_color_names = ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"]
+ANSI = np.uint8([
+  [0,   0,   0],
+  [255, 0,   0],
+  [0,   255, 0],
+  [255, 255, 0],
+  [0,   0,   255],
+  [255, 0,   255],
+  [0,   255, 255],
+  [255, 255, 255]
+])
 
 
 def luminance(pixel):
@@ -93,6 +66,33 @@ def validate_rgb_palette(palette):
 
 def rgb2hex(rgb):
   return "#{0:02X}{1:02X}{2:02X}".format(*(round(c) for c in rgb))
+
+
+def rgb_string2rgb(s):
+  try:
+    return np.uint8(RGB_STRING_REGEX.findall(s)[0])
+  except IndexError:
+    return ''
+
+
+def hex2rgb(s):
+  h = HEX_STRING_REGEX.findall(s)
+  if not h: return ''
+  h = h[0][:6]
+  if len(h) == 3:
+    r, g, b = h[0], h[1], h[2]
+    r, g, b = f'{r}{r}', f'{g}{g}', f'{b}{b}'
+  else:
+    r, g, b = h[0:2], h[2:4], h[4:6]
+  return np.uint8(list(map(lambda x: int(x, 16), [r,g,b])))
+
+
+def string2rgb(s):
+  rgb = rgb_string2rgb(s)
+  if len(rgb) == 0:
+    return hex2rgb(s)
+  else:
+    return rgb
 
 
 def ansi_colorize(message, fg='', bg=''):

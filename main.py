@@ -8,7 +8,7 @@ import pathlib
 import os
 
 from image import *
-from options import args, config, config_file, config_defaults
+from cli import args
 from kmeans import kmeans
 from util import EXECUTABLE_DIRECTORY
 
@@ -20,10 +20,14 @@ VERBOSE_LOW    = VERBOSE_MEDIUM or args.verbose > 0
 np.set_printoptions(precision=3, suppress=True)
 
 if VERBOSE_HIGH:
+  from config import config_file, config
   if config_file:
     info(f"Configuration loaded from {config_file}:")
-    for key, value in config_defaults.items():
-      info(f"\t{key}={value}")
+    for section in config.sections():
+      _config = config[section]
+      info(f"\n\t[{section}]")
+      for key, value in _config.items():
+        info(f"\t{key}={value}")
   info("\nArguments: " + ' '.join([f"{k}={v}" for k,v in args.__dict__.items()]))
 
 if args.wallpaper_picker:
@@ -36,6 +40,23 @@ else:
 
 if VERBOSE_MEDIUM:
   info(f"\nUsing wallpaper: {wp_path}")
+
+if args.load:
+  from exif import load_exif_metadata
+  Xresource_colors = load_exif_metadata(wp_path)
+  if VERBOSE_LOW:
+    info("Found palette cache embedded in image metadata")
+    info(Xresource_colors['config'])
+  del Xresource_colors['config']
+
+kmeans_initial_colors = ANSI.copy()
+for i, color_name in enumerate(ANSI_color_names):
+  try:
+    c = string2rgb(getattr(args, color_name))
+    if len(c) > 0: kmeans_initial_colors[i] = c
+  except AttributeError:
+    continue
+
 
 wp=Image.open(wp_path).convert('RGB')
 wp.thumbnail((args.resize, args.resize), resample=Image.LANCZOS)
@@ -56,8 +77,8 @@ pixels = filter_colors_in_ellipsoid_volume(
 )
 
 (
-  kmeans_cluster_centers, ANSI_indices_sorted_by_neighbor_quantity
-)   = kmeans(pixels, args.iterations)
+  kmeans_cluster_centers,  ANSI_indices_sorted_by_neighbor_quantity
+)   = kmeans(kmeans_initial_colors, pixels, args.iterations)
 
 initial_palette = (
   constrain_background_colors_to_minimum_distance_from_target(
@@ -163,6 +184,11 @@ Xresource_colors = {
 
 # Convert all RGB tuples to hexidecimal strings
 Xresource_colors = { color: rgb2hex(rgb) for color, rgb in Xresource_colors.items() }
+
+if args.save:
+  from exif import save_exif_metadata
+  if not save_exif_metadata(wp_path, args, Xresource_colors):
+    info("An error occurred saving palette cache to image metadata.")
 
 
 if VERBOSE_DEBUG:
