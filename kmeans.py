@@ -45,6 +45,6 @@ def kmeans(initial_cluster_centers, pixels, iterations=3):
     cluster_centers = average_of_each_ANSIs_closest_neighbors
 
   ANSI_index, ANSI_nearest_neighbor_quantity = np.unique(closest_ANSI_index_per_pixel, return_counts = True)
-  ANSI_indices_sorted_by_neighbor_quantity = np.flip(ANSI_nearest_neighbor_quantity[1:-1].argsort()+1)
+  indices_sorted_by_neighbor_quantity = np.flip(ANSI_nearest_neighbor_quantity[1:-1].argsort()+1)
 
-  return cluster_centers, ANSI_indices_sorted_by_neighbor_quantity
+  return cluster_centers, indices_sorted_by_neighbor_quantity

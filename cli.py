@@ -62,8 +62,8 @@ parser.add_argument(
 )
 
 parser.add_argument(
-  "--random-color-order",
-  "-R",
+  "--color-order",
+  "-r",
   default='',
   help="seed for color order",
 )

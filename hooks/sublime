@@ -13,26 +13,26 @@ cat <<EOF > $HOME/.config/sublime-text/Packages/User/xresources.sublime-color-sc
         "block_caret"                   : "$highlight",
         "caret"                         : "$highlight",
         "bracket_contents_foreground"   : "$highlight",
-        "bracket_contents_options"      : "bold underline forground",
+        "bracket_contents_options"      : "bold glow foreground",
         "brackets_foreground"           : "$highlight",
-        "brackets_options"              : "bold underline forground",
-        "find_highlight" /*background*/ : "$color0L",
+        "brackets_options"              : "bold glow foreground",
+        "find_highlight" /*background*/ : "$color8",
         "find_highlight_foreground"     : "$highlight",
         "fold_marker"                   : "$highlight",
         "foreground"                    : "$color7",
         "gutter"                        : "$color0",
         "gutter_foreground"             : "$midground",
         "highlight" /*inactive find*/   : "$lowlight",
-        "inactive_selection" /*bg*/     : "$color0L",
+        "inactive_selection" /*bg*/     : "$color8",
         "selection_foreground"          : "$highlight",
         "inactive_selection_foreground" : "$lowlight",
         "line_diff_added"               : "$color10",
         "line_diff_deleted"             : "$color9",
         "line_diff_modified"            : "$color12",
         "line_diff_width" /*1-8*/       : "1",
-        "line_highlight"                : "$color0L",
+        "line_highlight"                : "$color8",
         "misspelling"                   : "#F00",
-        "selection"                     : "$color0l",
+        "selection"                     : "$color8",
         "selection_border"              : "$highlight",
         "selection_border_width"        : "1",
         "selection_corner_radius"       : "2",
@@ -137,12 +137,12 @@ cat <<EOF > $HOME/.config/sublime-text/Packages/User/xresources.sublime-color-sc
         },
         {
           "name": "Invalid", "scope": "invalid",
-          "foreground": "$color7l",
+          "foreground": "$color15",
           "background": "$color1S"
         },
         {
           "name": "Invalid deprecated", "scope": "invalid.deprecated",
-          "foreground": "$color7l",
+          "foreground": "$color15",
           "background": "$color3s"
         },
         {
@@ -164,7 +164,7 @@ cat <<EOF > $HOME/.config/sublime-text/Packages/User/xresources.sublime-color-sc
         },
         {
           "name": "Section", "scope": "punctuation.section",
-          "foreground": "$color7L"
+          "foreground": "$color15"
         },
         {
           "name": "Annotation", "scope": "punctuation.definition.annotation",
@@ -220,11 +220,11 @@ cat <<EOF > $HOME/.config/sublime-text/Packages/User/xresources.sublime-color-sc
         },
         {
           "name": "markup code", "scope": "markup.raw",
-          "background": "color($color0L alpha(0.38))"
+          "background": "color($color8 alpha(0.38))"
         },
         {
           "name": "markup code", "scope": "markup.raw.inline",
-          "background": "color($color0L alpha(0.5))"
+          "background": "color($color8 alpha(0.5))"
         },
         {
           "name": "markup punctuation", "scope": "(text punctuation.definition.italic | text punctuation.definition.bold)",

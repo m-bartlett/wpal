@@ -14,6 +14,7 @@ def load_exif_metadata(image_path):
 
 
 def save_exif_metadata(image_path, args, payload):
+  payload = {**payload}   # deep copy
   payload['config'] = args.__dict__
   payload = json.dumps(payload, indent=None, separators=(',',':'))
   body = f"{METADATA_PAYLOAD_MAGIC}{payload}"
