@@ -53,13 +53,15 @@ if args.load:
   del Xresource_colors['config']
 
 
+
 kmeans_initial_colors = ANSI.copy()
-for i, color_name in enumerate(ANSI_color_names):
-  try:
-    c = string2rgb(getattr(args, color_name))
-    if len(c) > 0: kmeans_initial_colors[i] = c
-  except AttributeError:
-    continue
+if not args.pure:
+  for i, color_name in enumerate(ANSI_color_names):
+    try:
+      c = string2rgb(getattr(args, color_name))
+      if len(c) > 0: kmeans_initial_colors[i] = c
+    except AttributeError:
+      continue
 
 
 wallpaper = Image.open(wallpaper_path).convert('RGB')
@@ -87,8 +89,6 @@ palette_result = (
       minimum_contrast      = args.minimum_contrast,
       light_palette         = args.light,
       verbose               = VERBOSE_HIGH
-      # value_scalars
-      # saturation_scalars
     )
 
 )
@@ -97,7 +97,7 @@ base_colors, bold_colors = palette_result["base_colors"], palette_result["bold_c
 highlight,   lowlight    = palette_result["highlight"],   palette_result["lowlight"]
 ansi_palette = np.concatenate([base_colors, bold_colors])
 
-midground = (0.7*base_colors[0] + 0.3*bold_colors[7]).astype(np.uint8)
+midground = (0.8*base_colors[0] + 0.2*bold_colors[7]).astype(np.uint8)
 
 if args.color_order:
   color_order = parse_string_as_color_order_or_random_seed(args.color_order)

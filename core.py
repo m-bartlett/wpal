@@ -8,8 +8,10 @@ def generate_ANSI_palette_from_pixels( *,
                                        kmeans_iterations = 3,
                                        minimum_contrast = 0,
                                        light_palette = False,
-                                       value_scalars = [0.9, 0.95, 1.25, 1.5],
-                                       saturation_scalars = [1.5, 1.25, 1.0, 0.95],
+                                       base_value = 1.0,
+                                       base_saturation = 1.0,
+                                       bold_value = 1.5,
+                                       bold_saturation = 1.0,
                                        verbose = False ):
 
 	rgb_pixels = filter_colors_in_ellipsoid_volume(
@@ -55,37 +57,23 @@ def generate_ANSI_palette_from_pixels( *,
 
 
 	hsv_palette = rgb_palette_to_hsv_palette(initial_palette)
-
+	base_rebalanced = rebalance_palette(hsv_palette, base_value, base_saturation)
+	bold_rebalanced = rebalance_palette(hsv_palette, bold_value, bold_saturation)
 	highlight_index = get_most_saturated_color_index(hsv_palette)
-
-	# value_scalars = [0.9, 0.95, 1.25, 1.5]
-	# saturation_scalars = (
-	#   [1.5, 1.25, 1.0, 0.95] if light_palette
-	#   else [1, 1, 1, 1]
-	# )
-
-	palettes = (
-	  create_gradated_palettes(
-	    hsv_palette,
-	    value_scalars = value_scalars,
-	    saturation_scalars = saturation_scalars
-	  )
-	)
 
 	# middle_palette_index = (middle_palette_index:=len(palettes))//2 + (middle_palette_index & 1)
 
 	if light_palette:
-	  bold_colors = palettes[1]
-	  base_colors = palettes[-1].copy()
-	  base_colors[0] = palettes[-1][0]
-	  highlight = bold_colors[highlight_index]
-	  lowlight = palettes[-3][highlight_index]
-
+		# swap base and bold for light themes so bold is still high contrast
+	  base_colors = bold_rebalanced
+	  bold_colors = base_rebalanced
 	else:
-	  base_colors = palettes[2]
-	  bold_colors = palettes[-1]
-	  highlight = bold_colors[highlight_index]
-	  lowlight = palettes[1][highlight_index]
+	  base_colors = base_rebalanced
+	  bold_colors = bold_rebalanced
+
+	highlight = bold_colors[highlight_index]
+	lowlight  = base_colors[highlight_index]
+
 
 	# return (base_colors, bold_colors, indices_sorted_by_neighbor_quantity)
 	return {

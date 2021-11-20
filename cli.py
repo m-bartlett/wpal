@@ -105,6 +105,13 @@ parser.add_argument(
   help="parse image metadata for palette configuration"
 )
 
+parser.add_argument(
+  "--pure",
+  "-P",
+  action='store_true',
+  help="use pure 3-bit ANSI colors as k-means starting points (highest contrast but less unique palettes)"
+)
+
 for color_name in ANSI_color_names:
   parser.add_argument(
     f"--{color_name}",
