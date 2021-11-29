@@ -205,17 +205,18 @@ def parse_string_as_color_order_or_random_seed(order):
     This list will serve as the index order for ANSI
     colors red, green, yellow, blue, cyan, and violet.
     """
-
-    target_order = set(range(1,7))
-    order_difference = target_order.difference(order)
-    completed_order = list(order) + list(order_difference)
-    if len(order) + len(order_difference) == len(target_order):
-      return completed_order
-    else:
-      try:  order = [int(n) for n in order]
-      except ValueError:
-        import pickle
-        order = pickle.dumps(order)
+    try:
+      order = [int(n) for n in order]
+      target_order = set(range(1,7))
+      order_difference = target_order.difference(order)
+      completed_order = list(order) + list(order_difference)
+      if len(order) + len(order_difference) == len(target_order):
+        return completed_order
+      else:
+        raise ValueError
+    except ValueError:
+      import pickle
+      order = pickle.dumps(order)
       seed = int(sha256(bytes(order)).hexdigest(), 16) % 4294967295
       color_order = list(target_order)
       np.random.seed(seed)

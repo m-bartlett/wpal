@@ -78,7 +78,7 @@ cat <<EOF > $HOME/.config/sublime-text/Packages/User/xresources.sublime-color-sc
         },
         {
           "name": "Function call", "scope": "variable.function, variable.annotation",
-          "foreground": "$color4s"
+          "foreground": "$color4S"
         },
         {
           "name": "Entity name", "scope": "entity.name.function",
@@ -90,7 +90,7 @@ cat <<EOF > $HOME/.config/sublime-text/Packages/User/xresources.sublime-color-sc
         },
         {
           "name": "Entity name", "scope": "entity.name.constant",
-          "foreground": "$color3s"
+          "foreground": "$color3S"
          ,"font_style": "glow"
         },
         {
@@ -156,7 +156,7 @@ cat <<EOF > $HOME/.config/sublime-text/Packages/User/xresources.sublime-color-sc
         },
         {
           "name": "Punctuation", "scope": "punctuation.definition",
-          "foreground": "$color6s"
+          "foreground": "$color3S"
         },
         {
           "name": "Separator", "scope": "punctuation.separator, punctuation.terminator",
@@ -172,7 +172,7 @@ cat <<EOF > $HOME/.config/sublime-text/Packages/User/xresources.sublime-color-sc
         },
         {
           "name": "Accessor", "scope": "punctuation.accessor",
-          "foreground": "$color"
+          "foreground": "$color3S"
         },
         {
           "name": "markup headings", "scope": "markup.heading",

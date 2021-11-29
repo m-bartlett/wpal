@@ -25,21 +25,25 @@ np.set_printoptions(precision=3, suppress=True)
 
 
 if VERBOSE_HIGH:
-  from config import config_file, config
+  from config import config_file
+  from cli import file_config
   if config_file:
     info(f"Configuration loaded from {config_file}:")
-    for section in config.sections():
-      _config = config[section]
-      info(f"\n\t[{section}]")
-      for key, value in _config.items():
-        info(f"\t{key}={value}")
+    for key, value in file_config.items():
+      info(f"\t{key}={value}")
   info("\nArguments: " + ' '.join([f"{k}={v}" for k,v in args.__dict__.items()]))
 
 
-if args.wallpaper_picker:  popen(args.wallpaper_picker)
-
-if args.file:  wallpaper_path = args.file
-else:  wallpaper_path = get_current_wallpaper()
+if args.wallpaper_picker:
+  popen(args.wallpaper_picker)
+if args.file:
+  wallpaper_path = args.file
+elif args.wallpaper_path:
+  wallpaper_path = args.wallpaper_path
+elif args.wallpaper_path_command:
+  wallpaper_path = popen(args.wallpaper_path_command).stdout.decode().strip()
+else:
+  raise RuntimeError("A wallpaper path was not provided")
 
 if VERBOSE_MEDIUM:  info(f"\nUsing wallpaper: {wallpaper_path}")
 
@@ -99,10 +103,16 @@ ansi_palette = np.concatenate([base_colors, bold_colors])
 
 midground = (0.8*base_colors[0] + 0.2*bold_colors[7]).astype(np.uint8)
 
-if args.color_order:
+
+if args.color_order is None:  # -r is given with no argument, use a random ordering
+  color_order = parse_string_as_color_order_or_random_seed(os.urandom(6))
+elif args.color_order is not False:  # -r is given with an argument, parse if its a seed or completable ordering
   color_order = parse_string_as_color_order_or_random_seed(args.color_order)
-else:
+else:   # -r is absent, use the kmeans weighted neighbor order
   color_order = palette_result["weighted_order"]
+
+if VERBOSE_HIGH:
+  info(f"Using palette ordering: {''.join(map(str,color_order))}")
 
 sorted_base_colors = base_colors[color_order]
 sorted_bold_colors = bold_colors[color_order]
@@ -126,6 +136,8 @@ Xresource_colors = {
 
 # Convert all RGB tuples to hexidecimal strings
 Xresource_colors = { color: rgb2hex(rgb) for color, rgb in Xresource_colors.items() }
+Xresource_colors["themestyle"] = 'light' if args.light else 'dark'
+
 
 if args.save:
   from exif import save_exif_metadata

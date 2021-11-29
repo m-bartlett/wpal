@@ -12,12 +12,6 @@ def info(*args, **kwargs):
     print(*args, **kwargs)
 
 
-def get_current_wallpaper():
-  with Path("~/.config/nitrogen/bg-saved.cfg").expanduser().open('r') as wp_file:
-    wp_file.readline()
-    return wp_file.readline().split('=')[1].strip()
-
-
 def get_terminal_size():
     env = os.environ
     def ioctl_GWINSZ(fd):
@@ -43,7 +37,7 @@ def get_terminal_size():
 def popen(cmdline, stdin=None, **kwargs):
   if isinstance(stdin, str): stdin=stdin.encode()
   return subprocess.run(
-    shlex.split(cmdline),
+    list(map(os.path.expanduser, shlex.split(cmdline))),
     input=stdin,
     capture_output=True,
     **kwargs

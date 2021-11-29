@@ -1,6 +1,6 @@
 import argparse
 from image import ANSI_color_names
-from config import default_args
+from config import read_configuration_from_file
 
 
 # Configuration priority:
@@ -64,7 +64,8 @@ parser.add_argument(
 parser.add_argument(
   "--color-order",
   "-r",
-  default='',
+  default=False,
+  nargs='?',
   help="seed for color order",
 )
 
@@ -122,10 +123,13 @@ for color_name in ANSI_color_names:
 
 args = parser.parse_args()
 
-# CLI flag values take priority over config
-for k,v in default_args.items():
+# CLI flag values take priority over configuration from files
+
+file_config = read_configuration_from_file()
+
+for k,v in file_config.items():
   try:
-    if getattr(args, k) is None:
+    if getattr(args, k, None) is None:
       setattr(args, k, v)
   except AttributeError:
     continue

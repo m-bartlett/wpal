@@ -11,7 +11,7 @@ def generate_ANSI_palette_from_pixels( *,
                                        base_value = 1.0,
                                        base_saturation = 1.0,
                                        bold_value = 1.5,
-                                       bold_saturation = 1.0,
+                                       bold_saturation = 1.1,
                                        verbose = False ):
 
 	rgb_pixels = filter_colors_in_ellipsoid_volume(
@@ -56,21 +56,17 @@ def generate_ANSI_palette_from_pixels( *,
 	  initial_palette[1:-1] = higher_contrast_foreground_colors
 
 
-	hsv_palette = rgb_palette_to_hsv_palette(initial_palette)
-	base_rebalanced = rebalance_palette(hsv_palette, base_value, base_saturation)
-	bold_rebalanced = rebalance_palette(hsv_palette, bold_value, bold_saturation)
-	highlight_index = get_most_saturated_color_index(hsv_palette)
-
-	# middle_palette_index = (middle_palette_index:=len(palettes))//2 + (middle_palette_index & 1)
 
 	if light_palette:
 		# swap base and bold for light themes so bold is still high contrast
-	  base_colors = bold_rebalanced
-	  bold_colors = base_rebalanced
-	else:
-	  base_colors = base_rebalanced
-	  bold_colors = bold_rebalanced
+	  base_value, bold_value = bold_value, base_value
+	  base_saturation, bold_saturation = bold_saturation, base_saturation
 
+	hsv_palette = rgb_palette_to_hsv_palette(initial_palette)
+	base_colors = rebalance_palette(hsv_palette, base_value, base_saturation)
+	bold_colors = rebalance_palette(hsv_palette, bold_value, bold_saturation)
+
+	highlight_index = get_most_saturated_color_index(hsv_palette)
 	highlight = bold_colors[highlight_index]
 	lowlight  = base_colors[highlight_index]
 
