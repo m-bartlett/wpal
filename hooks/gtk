@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+if [[ "$themestyle" == "dark" ]]; then
+  gtk_dark_theme_config='gtk-application-prefer-dark-theme = true'
+else
+  gtk_dark_theme_config='gtk-application-prefer-dark-theme = false'
+fi
+
+cat << EOF > $HOME/.themes/FlatColor/colors2
+$gtk_dark_theme_config
+gtk-color-scheme = "bg_color:$color0
+color0:$color0
+text_color:$color15
+selected_bg_color:$highlight
+selected_fg_color:$color15
+tooltip_bg_color:$color0
+tooltip_fg_color:$color7
+titlebar_bg_color:$color0
+titlebar_fg_color:$color15
+menu_bg_color:$color0
+menu_fg_color:$color7
+link_color:$color12"
+EOF
+
+cat << EOF > $HOME/.themes/FlatColor/colors3
+@define-color bg_color $background;
+@define-color fg_color $foreground;
+@define-color base_color $color8;
+@define-color text_color $foreground;
+@define-color text_color_disabled $midground;
+@define-color selected_bg_color $color8;
+@define-color selected_fg_color $highlight;
+@define-color tooltip_bg_color $background;
+@define-color tooltip_fg_color $foreground;
+EOF
+
+gtkrc-reload

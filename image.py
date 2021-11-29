@@ -6,6 +6,7 @@ import re
 from util import *
 from PIL import Image, ImageFilter
 from colorsys import hsv_to_rgb, rgb_to_hsv
+from hashlib import sha256
 
 
 np.set_printoptions(precision=3, suppress=True)
@@ -17,10 +18,10 @@ BLACK=np.array([0,0,0])
 WHITE=np.array([255,255,255])
 ANSI_color_names = ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"]
 ANSI = np.uint8([
-  [0,   0,   0],
-  [255, 0,   0],
-  [0,   255, 0],
-  [255, 255, 0],
+  [0,   0,   0  ],
+  [255, 0,   0  ],
+  [0,   255, 0  ],
+  [255, 255, 0  ],
   [0,   0,   255],
   [255, 0,   255],
   [0,   255, 255],
@@ -78,12 +79,12 @@ def rgb_string2rgb(s):
 def hex2rgb(s):
   h = HEX_STRING_REGEX.findall(s)
   if not h: return ''
-  h = h[0][:6]
-  if len(h) == 3:
+  h = h[0]
+  if len(h) > 5:
+    r, g, b = h[0:2], h[2:4], h[4:6]
+  else:
     r, g, b = h[0], h[1], h[2]
     r, g, b = f'{r}{r}', f'{g}{g}', f'{b}{b}'
-  else:
-    r, g, b = h[0:2], h[2:4], h[4:6]
   return np.uint8(list(map(lambda x: int(x, 16), [r,g,b])))
 
 
@@ -95,7 +96,7 @@ def string2rgb(s):
     return rgb
 
 
-def ansi_colorize(message, fg='', bg=''):
+def ANSI_colorize(message, fg='', bg=''):
   if isinstance(fg, np.ndarray):
     fg = fg.astype(np.uint8)
   fg = "38;2;{0};{1};{2}".format(*fg)
@@ -105,8 +106,8 @@ def ansi_colorize(message, fg='', bg=''):
   return f"\x1b[{bg};{fg}m{message}\x1b[0m"
 
 
-def rgb2ansi_colorized_hex(rgb):
-  return ansi_colorize(
+def rgb2ANSI_colorized_hex(rgb):
+  return ANSI_colorize(
     rgb2hex(rgb),
     fg=most_visible_foreground_color(rgb),
     bg=rgb
@@ -115,7 +116,7 @@ def rgb2ansi_colorized_hex(rgb):
 
 def palette_as_colorized_hexcodes(palette, separator=""):
   palette = validate_rgb_palette(palette)
-  return separator.join([rgb2ansi_colorized_hex(rgb) for rgb in palette])
+  return separator.join([rgb2ANSI_colorized_hex(rgb) for rgb in palette])
 
 
 def palette_as_foreground_on_background_ANSI_colors( foreground_colors,
@@ -124,7 +125,7 @@ def palette_as_foreground_on_background_ANSI_colors( foreground_colors,
   foreground_colors = validate_rgb_palette(foreground_colors)
   background_color = validate_rgb_palette(background_color)
   return separator.join([
-    ansi_colorize(rgb2hex(rgb), fg=rgb, bg=background_color)
+    ANSI_colorize(rgb2hex(rgb), fg=rgb, bg=background_color)
     for rgb in foreground_colors
   ])
 
@@ -132,7 +133,7 @@ def palette_as_foreground_on_background_ANSI_colors( foreground_colors,
 def palette_as_filled_blocks(palette, block_content=" ", separator=""):
   palette = validate_rgb_palette(palette)
   return separator.join([
-    ansi_colorize(block_content, fg=rgb, bg=rgb)
+    ANSI_colorize(block_content, fg=rgb, bg=rgb)
     for rgb in palette
   ])
 
@@ -162,37 +163,65 @@ def print_palette_preview(*, base_colors, bold_colors, highlight, lowlight):
   palette_info_width = spacer_width * 6 + 6
   width, _ = get_terminal_size()
   offset_width = (width - palette_info_width) // 2
-  offset = " " * offset_width
-
+  offset = f"\033[{offset_width}C"
+  space = "\033[1C"
   info(
     offset +
-    ansi_colorize(" " + spacer + rgb2hex(bg) + spacer + " ", fg=highlight, bg=bg) + " " +
-    ansi_colorize(" " + spacer + rgb2hex(fg) + spacer + " ", fg=lowlight, bg=fg)
+    ANSI_colorize(space + spacer + rgb2hex(bg) + spacer + space, fg=highlight, bg=bg) + space +
+    ANSI_colorize(space + spacer + rgb2hex(fg) + spacer + space, fg=lowlight, bg=fg)
   )
   info()
 
   base_foreground_colors = base_colors[1:-1].copy()[[0,2,1,5,3,4]]
-  info(offset + palette_as_foreground_on_background_ANSI_colors(base_foreground_colors, bg, separator=" "))
-  info(offset + palette_as_filled_blocks(base_foreground_colors, block_content=spacer, separator=" "))
+  info(offset + palette_as_foreground_on_background_ANSI_colors(base_foreground_colors, bg, separator=space))
+  info(offset + palette_as_filled_blocks(base_foreground_colors, block_content=spacer, separator=space))
 
   bold_foreground_colors = bold_colors[1:-1].copy()[[0,2,1,5,3,4]]
-  info(offset + palette_as_filled_blocks(bold_foreground_colors, block_content=spacer, separator=" "))
-  info(offset + palette_as_foreground_on_background_ANSI_colors(bold_foreground_colors, bg, separator=" "))
+  info(offset + palette_as_filled_blocks(bold_foreground_colors, block_content=spacer, separator=space))
+  info(offset + palette_as_foreground_on_background_ANSI_colors(bold_foreground_colors, bg, separator=space))
 
   # codeblock_json_keys = ['"red":   ', '"yellow":', '"green": ', '"cyan":  ', '"blue":  ', '"purple":' ]
   # codeblock_json_key_width = (max(map(len, codeblock_json_keys)) + spacer_width) // 2 + 3
   # codeblock_offset = ' ' * codeblock_json_key_width
-  # codeblock_offset_colored = ansi_colorize(codeblock_offset, bg=bg, fg=fg)
+  # codeblock_offset_colored = ANSI_colorize(codeblock_offset, bg=bg, fg=fg)
 
   # info()
-  # info(offset + ansi_colorize("{" + (" "*46), fg=fg, bg=bg))
+  # info(offset + ANSI_colorize("{" + (" "*46), fg=fg, bg=bg))
   # for i, key in enumerate(codeblock_json_keys):
-  #   key = ansi_colorize(key, fg=base_foreground_colors[i], bg=bg)
+  #   key = ANSI_colorize(key, fg=base_foreground_colors[i], bg=bg)
   #   bold_value = bold_foreground_colors[i]
-  #   value = ansi_colorize(rgb2hex(bold_value), fg=bold_value, bg=bg)
+  #   value = ANSI_colorize(rgb2hex(bold_value), fg=bold_value, bg=bg)
   #   line_string = f'{key} "{value}",'
   #   info(offset + codeblock_offset_colored + line_string)
-  # info(offset + ansi_colorize("}" + (" "*46), fg=fg, bg=bg))
+  # info(offset + ANSI_colorize("}" + (" "*46), fg=fg, bg=bg))
+
+
+def parse_string_as_color_order_or_random_seed(order):
+    """
+    Check if arg is a subset of elements 1-6, and if so
+    return the subset plus remaining elements in order.
+    Otherwise, use arg to seed a psuedo-random number
+    generator and use it to shuffle elements 1-6.
+    This list will serve as the index order for ANSI
+    colors red, green, yellow, blue, cyan, and violet.
+    """
+    try:
+      order = [int(n) for n in order]
+      target_order = set(range(1,7))
+      order_difference = target_order.difference(order)
+      completed_order = list(order) + list(order_difference)
+      if len(order) + len(order_difference) == len(target_order):
+        return completed_order
+      else:
+        raise ValueError
+    except ValueError:
+      import pickle
+      order = pickle.dumps(order)
+      seed = int(sha256(bytes(order)).hexdigest(), 16) % 4294967295
+      color_order = list(target_order)
+      np.random.seed(seed)
+      np.random.shuffle(color_order)
+      return color_order
 
 
 def filter_colors_in_ellipsoid_volume(pixels, ellipsoids=[]):
@@ -225,34 +254,21 @@ def get_most_saturated_color_index(hsv_palette):
   return saturation_distances.argmin()+1
 
 
-def create_gradated_palettes(hsv_palette, value_scalars, saturation_scalars):
-  # Create an array that is several duplicates of the original palette with different values
-  palettes = np.tile(hsv_palette, [len(value_scalars)+1, 1, 1])
+def rebalance_palette(hsv_palette, value, saturation):
+  palette = hsv_palette.copy()
 
-  for i, value_scalar in enumerate(value_scalars):
-    palette = palettes[i]
+  # 0=hue, 1=saturation, 2=value
+  # hue<=360, saturation<=1, value<=255
+  palette[:,2] = np.minimum( palette[:,2] * value,
+                             np.repeat(255,palette.shape[0]) )
 
-    # 0=hue, 1=saturation, 2=value, we want to change value
-    palette[:,2] = np.minimum(
-      palette[:,2] * value_scalar,
-      np.repeat(255,palette.shape[0])
-    )
+  # don't re-saturate background and foreground color since they're superlative
+  palette[1:-1,1] = np.minimum( palette[1:-1,1] * saturation,
+                                np.repeat(1.0,palette.shape[0]-2) )
 
-    palette[1:-1,1] = np.minimum(
-      palette[1:-1,1] * saturation_scalars[i],
-      np.repeat(1.0,palette.shape[0]-2)
-    )
+  palette = np.apply_along_axis(lambda c: hsv_to_rgb(*c), 1, palette).astype(np.uint8)
 
-  palettes = np.apply_along_axis(lambda c: hsv_to_rgb(*c), 2, palettes).astype(int)
-
-  # place original palette in center, making them value-sorted
-  palettes_len = len(palettes)
-  middle_index = sum(divmod(palettes_len,2))-1
-  palette_order = list(range(palettes_len))
-  palette_order.insert(middle_index, palette_order.pop())
-  palettes = palettes[palette_order]
-
-  return palettes
+  return palette
 
 
 def constrain_contrast_between_foreground_and_background_colors(
@@ -293,7 +309,7 @@ def constrain_contrast_between_foreground_and_background_colors(
   for i in range(max_iterations):
     if verbose:
       colorized_contrasts = [
-        ansi_colorize(f'{contrast:0.2f}', fg=color, bg=background_color)
+        ANSI_colorize(f'{contrast:0.2f}', fg=color, bg=background_color)
         for contrast, color
         in zip(new_contrasts, validate_rgb_palette(higher_contrast_colors))
       ]
@@ -329,7 +345,15 @@ class TerminalImagePreview(contextlib.AbstractContextManager):
   # Print image preview to terminal using w3m
   # https://blog.z3bra.org/2014/01/images-in-terminal.html
 
-  WIDTH_SCALAR  = 7
+  """
+                            TO-DO
+                            import array, fcntl, termios
+                            buf = array.array('H', [0, 0, 0, 0])
+                            fcntl.ioctl(1, termios.TIOCGWINSZ, buf)
+                            print(buf[2], buf[3])
+  """
+
+  WIDTH_SCALAR  = 8
   HEIGHT_SCALAR = 18
 
   W3M_IMGDISPLAY_BIN = "/usr/lib/w3m/w3mimgdisplay"

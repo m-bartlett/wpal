@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# xrdb -merge <(cat <<EOF
+# URxvt*background: [100]$color0
+# URxvt*borderColor: [100]$color0
+# *fading: 20
+# *fadeColor: $color0
+# *cursorColor: $highlight
+# *cursorColor2: $color6
+# EOF
+# )
+
+kill -USR1 $(pidof st)

@@ -1,12 +1,28 @@
 #!/usr/bin/env bash
-pkill dunst
 # low, normal, critical
-&> /dev/null dunst \
-  -lb "$color0" \
-  -lf "$midground" \
-  -nb "$color0" \
-  -nf "$color15" \
-  -cb "$color0" \
-  -cf "$color15" \
-  -frame_color "$highlight" \
-  & disown
+
+# pkill dunst
+# &> /dev/null dunst  \
+#   -lf "$midground"  \
+#   -nf "$color15"    \
+#   -cf "$color15"    \
+#   -lb "$color0"     \
+#   -nb "$color0"     \
+#   -cb "$color0"     \
+#   -lfr "$highlight" \
+#   -nfr "$highlight" \
+#   -cfr "$highlight" \
+#   -lh "$highlight"  \
+#   -nh "$highlight"  \
+#   -ch "$highlight"  \
+#   & disown
+
+pkill dunst
+&>/dev/null dunst -config <(
+  sed \
+    -e "s/\( *frame_color *= *\).*$/\1\"$highlight\"/" \
+    -e  "s/\( *highlight *= *\).*$/\1\"$highlight\"/" \
+    -e "s/\( *background *= *\).*$/\1\"$background\"/" \
+    -e "s/\( *foreground *= *\).*$/\1\"$foreground\"/" \
+    -- $HOME/.config/dunst/dunstrc
+  ) &

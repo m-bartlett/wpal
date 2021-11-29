@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-~/.config/polybar/start
+$HOME/.config/polybar/start

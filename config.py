@@ -3,13 +3,15 @@ import os
 from pathlib import Path
 from util import EXECUTABLE_DIRECTORY, EXECUTABLE_NAME
 
-config = configparser.ConfigParser()
+config_parser = configparser.ConfigParser()
 home = Path("~").expanduser()
 config_home = Path(os.getenv('XDG_CONFIG_HOME', "~/.config")).expanduser() / EXECUTABLE_NAME
 
-config_file_locations = [
+config_file = None
+config_file_paths = [
   config_home/'config.ini',
   home/f'.{EXECUTABLE_NAME}',
+  home/f'.{EXECUTABLE_NAME}/config.ini',
   EXECUTABLE_DIRECTORY/'config.ini'
 ]
 
@@ -20,23 +22,26 @@ default_args = {
   "minimum_contrast": 50,
 }
 
-for config_file in config_file_locations:
-  if config_file.exists():
 
-    config.read(config_file)
+def read_configuration_from_file():
+  global config_file
+  _config = {**default_args}  # deep copy
 
-    config_defaults = config['default']
-    for option in default_args.keys():
-      value = config_defaults.getfloat(option, default_args[option])
-      try:
-        if value.is_integer(): value = int(value)
-        default_args[option] = value
-        del config_defaults[option]
-      except:
-        default_args[option] = value
+  for config_file_path in config_file_paths:
+    if config_file_path.exists():
+      config_parser.read(config_file_path)
+      config_file = config_file_path.absolute()
+      break
 
-    kmeans_initial_colors_defaults = config['kmeans-initial-colors']
+  for section in config_parser.sections():
+    for option, value in config_parser[section].items():
+      option = option.replace('-','_')
+      for cast in [int, float]:
+        try:
+          value = cast(value)
+          break
+        except ValueError:
+          continue
+      _config[option] = value
 
-    default_args |= { k:v for k,v in kmeans_initial_colors_defaults.items() }
-
-    break
+  return _config
