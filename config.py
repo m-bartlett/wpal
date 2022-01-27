@@ -4,8 +4,13 @@ from pathlib import Path
 from util import EXECUTABLE_DIRECTORY, EXECUTABLE_NAME
 
 config_parser = configparser.ConfigParser()
-home = Path("~").expanduser()
-config_home = Path(os.getenv('XDG_CONFIG_HOME', "~/.config")).expanduser() / EXECUTABLE_NAME
+
+home = Path.home()
+if (XDG_CONFIG_HOME := os.getenv('XDG_CONFIG_HOME', False)):
+  config_home = Path(XDG_CONFIG_HOME).expanduser()
+else:
+  config_home = home / '.config'
+config_home /= EXECUTABLE_NAME
 
 config_file = None
 config_file_paths = [

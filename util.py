@@ -2,6 +2,7 @@ import subprocess
 import shlex
 import os
 import sys
+import fcntl, termios, struct, shutil  # for terminal size
 from pathlib import Path
 
 EXECUTABLE_DIRECTORY = Path(__file__).resolve(strict=True).parent
@@ -13,32 +14,19 @@ def info(*args, **kwargs):
 
 
 def get_terminal_size():
-    env = os.environ
-    def ioctl_GWINSZ(fd):
-        try:
-            import fcntl, termios, struct
-            cr = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
-        except:
-            return
-        return cr
-    cr = ioctl_GWINSZ(0) or ioctl_GWINSZ(1) or ioctl_GWINSZ(2)
-    if not cr:
-        try:
-            fd = os.open(os.ctermid(), os.O_RDONLY)
-            cr = ioctl_GWINSZ(fd)
-            os.close(fd)
-        except:
-            pass
-    if not cr:
-        cr = (env.get('LINES', 25), env.get('COLUMNS', 80))
-    return int(cr[1]), int(cr[0])
+    for fd in 0,1,2:
+        try: terminal_size = struct.unpack( 'hh',
+                                            fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234') )
+        except OSError: continue
+    else:
+        try:    terminal_size = shutil.get_terminal_size()
+        except: terminal_size = (os.getenv('LINES', 25), os.getenv('COLUMNS', 80))
+    return tuple(map(int, terminal_size))
 
 
 def popen(cmdline, stdin=None, **kwargs):
-  if isinstance(stdin, str): stdin=stdin.encode()
-  return subprocess.run(
-    list(map(os.path.expanduser, shlex.split(cmdline))),
-    input=stdin,
-    capture_output=True,
-    **kwargs
-  )
+    if isinstance(stdin, str): stdin=stdin.encode()
+    return subprocess.run( list(map(os.path.expanduser, shlex.split(cmdline))),
+                           input=stdin,
+                           capture_output=True,
+                           **kwargs )

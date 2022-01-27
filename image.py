@@ -161,10 +161,11 @@ def print_palette_preview(*, base_colors, bold_colors, highlight, lowlight):
   spacer_width = len("#000000")
   spacer = " " * spacer_width
   palette_info_width = spacer_width * 6 + 6
-  width, _ = get_terminal_size()
+  height, width = get_terminal_size()
   offset_width = (width - palette_info_width) // 2
   offset = f"\033[{offset_width}C"
-  space = "\033[1C"
+  # space = "\033[1C"
+  space = " "
   info(
     offset +
     ANSI_colorize(space + spacer + rgb2hex(bg) + spacer + space, fg=highlight, bg=bg) + space +
@@ -345,14 +346,6 @@ class TerminalImagePreview(contextlib.AbstractContextManager):
   # Print image preview to terminal using w3m
   # https://blog.z3bra.org/2014/01/images-in-terminal.html
 
-  """
-                            TO-DO
-                            import array, fcntl, termios
-                            buf = array.array('H', [0, 0, 0, 0])
-                            fcntl.ioctl(1, termios.TIOCGWINSZ, buf)
-                            print(buf[2], buf[3])
-  """
-
   WIDTH_SCALAR  = 8
   HEIGHT_SCALAR = 18
 
@@ -366,20 +359,43 @@ class TerminalImagePreview(contextlib.AbstractContextManager):
       return None
 
 
-  def __init__(self, image):
+  def __init__(self, image, padding=(0,0,0,0)):
     self.image = image
     super().__init__()
     self.fd = sys.stdin.fileno()
     self.stty = termios.tcgetattr(self.fd)
-    self.TERM_WIDTH, self.TERM_HEIGHT = get_terminal_size()
-    self.WIDTH, self.HEIGHT = self.TERM_WIDTH*self.WIDTH_SCALAR , self.TERM_HEIGHT*self.HEIGHT_SCALAR
+
+    # self.border_size = border_size
+    padding_top, padding_right, padding_bottom, padding_left = padding
+    padding_horizontal = padding_left + padding_right
+    padding_vertical = padding_top + padding_bottom
+    self.offset = ( padding_left*self.WIDTH_SCALAR, padding_top*self.HEIGHT_SCALAR )
+
+    self.term_width, self.term_height = get_terminal_size()
+    self.term_width -= padding_horizontal
+    self.term_height -= padding_vertical
+    self.pixel_width  = self.term_width  * self.WIDTH_SCALAR
+    self.pixel_height = self.term_height * self.HEIGHT_SCALAR
+    image_width, image_height = self.image.size
+
+    if image_width >= image_height:
+      resize_width  = self.pixel_width
+      resize_height = image_height * self.pixel_width / image_width
+    else:
+      resize_width  = image_width * self.pixel_height / image_height
+      resize_height = self.pixel_height
+
+    self.resize_width, self.resize_height = int(resize_width), int(resize_height)
 
 
   def display_image(self):
     with tempfile.NamedTemporaryFile(suffix=f'.jpg') as tempf:
       self.image.save(tempf.name)
-      stdin = f"0;1;0;0;{self.WIDTH};{self.HEIGHT};;;;;{tempf.name}\n4;\n3;\n"
-      popen(self.W3M_IMGDISPLAY_BIN, stdin=stdin)
+      w3m_input = (
+        f"0;1;{self.offset[0]};{self.offset[1]};{self.resize_width};{self.resize_height};;;;;{tempf.name}\n4;\n3;\n"
+      )
+      popen(self.W3M_IMGDISPLAY_BIN, stdin=w3m_input)
+      popen(self.W3M_IMGDISPLAY_BIN, stdin=w3m_input) # second time to improve latching on a double-buffer terminal
 
 
   def __enter__(self):
@@ -397,7 +413,6 @@ class TerminalImagePreview(contextlib.AbstractContextManager):
     new[3] = new[3] & ~termios.ICANON & ~termios.ECHO
     termios.tcsetattr(self.fd, termios.TCSADRAIN, new) # Change attributes once output queue is "drained"
 
-    self.display_image()
     return self
 
 

@@ -8,9 +8,9 @@ def generate_ANSI_palette_from_pixels( *,
                                        kmeans_iterations = 3,
                                        minimum_contrast = 0,
                                        light_palette = False,
-                                       base_value = 1.0,
+                                       value = 1.0,
+                                       value_delta = 0.5,  # value as in HSV
                                        base_saturation = 1.0,
-                                       bold_value = 1.5,
                                        bold_saturation = 1.1,
                                        verbose = False ):
 
@@ -59,8 +59,15 @@ def generate_ANSI_palette_from_pixels( *,
 
 	if light_palette:
 		# swap base and bold for light themes so bold is still high contrast
-	  base_value, bold_value = bold_value, base_value
-	  base_saturation, bold_saturation = bold_saturation, base_saturation
+	  # base_value, bold_value = bold_value, base_value
+	  # base_saturation, bold_saturation = bold_saturation, base_saturation
+	  value_delta_2 = value_delta / 2
+	  base_value = value + value_delta_2
+	  bold_value = value - value_delta_2
+	  bold_saturation += 0.25
+	else:
+	  base_value = value
+	  bold_value = value + value_delta
 
 	hsv_palette = rgb_palette_to_hsv_palette(initial_palette)
 	base_colors = rebalance_palette(hsv_palette, base_value, base_saturation)

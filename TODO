@@ -1,3 +1,7 @@
+[ ] zip-appify like pathpick
+
+[ ] export wallpaper path to hook environment
+  [ ] Image notification preview to show wallpaper set
 
 [ ] different minimum contrast for light and dark, also in config.ini
   [ ] minimum-contrast-light and minimum-contrast-dark priority, with fallback to minimum-contrast
@@ -5,11 +9,13 @@
 [ ] iterative contrast increasor uses HSL instead of contrast gradient descent
 
 [ ] exif load skips kmeans execution without making code ugly
-  [x] main -> core.main() and then __main__ imports core.main ?
 
 [ ] fix verbose color printing now that we don't generate 5 palettes
 
+[ ] terminal preview frame fix
+
 - ~~main -> __main__ and update symlink~~
 - ~~exif only stores base and bold colors, re-derives 5-palette~~ this loses information about cluster-sorting of colors
+[x] main -> core.main() and then __main__ imports core.main ?
 [x] better config
   [x] fix fails on missing section

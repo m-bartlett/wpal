@@ -34,8 +34,12 @@ if VERBOSE_HIGH:
   info("\nArguments: " + ' '.join([f"{k}={v}" for k,v in args.__dict__.items()]))
 
 
-if args.wallpaper_picker:
-  popen(args.wallpaper_picker)
+if args.wallpaper_picker is not False:
+  if args.wallpaper_picker is None:
+    popen(args.wallpaper_pick_command)
+  else:
+    popen(args.wallpaper_picker)
+
 if args.file:
   wallpaper_path = args.file
 elif args.wallpaper_path:
@@ -76,12 +80,8 @@ if args.blur_radius:
   wallpaper = wallpaper.filter(ImageFilter.BoxBlur(radius=args.blur_radius))
 
 rgb_pixels = np.array(wallpaper, dtype=int)[:,:,:3]
-rgb_pixels = (
-  rgb_pixels.reshape(
-    rgb_pixels.shape[0] * rgb_pixels.shape[1],
-    rgb_pixels.shape[2]
-  )
-)
+rgb_pixels = rgb_pixels.reshape( rgb_pixels.shape[0] * rgb_pixels.shape[1],
+                                 rgb_pixels.shape[2] )
 
 
 palette_result = (
@@ -102,17 +102,19 @@ highlight,   lowlight    = palette_result["highlight"],   palette_result["lowlig
 ansi_palette = np.concatenate([base_colors, bold_colors])
 
 midground = (0.8*base_colors[0] + 0.2*bold_colors[7]).astype(np.uint8)
+midground = ( (midground_weight:=0.7) * base_colors[0] +
+              (1-midground_weight) * bold_colors[7] ).astype(np.uint8)
+
 
 
 if args.color_order is None:  # -r is given with no argument, use a random ordering
   color_order = parse_string_as_color_order_or_random_seed(os.urandom(6))
+  info(f"Using palette ordering: {''.join(map(str,color_order))}")
 elif args.color_order is not False:  # -r is given with an argument, parse if its a seed or completable ordering
   color_order = parse_string_as_color_order_or_random_seed(args.color_order)
 else:   # -r is absent, use the kmeans weighted neighbor order
   color_order = palette_result["weighted_order"]
 
-if VERBOSE_HIGH:
-  info(f"Using palette ordering: {''.join(map(str,color_order))}")
 
 sorted_base_colors = base_colors[color_order]
 sorted_bold_colors = bold_colors[color_order]
@@ -153,9 +155,8 @@ if VERBOSE_DEBUG:
 
 if VERBOSE_MEDIUM:  # Show in-terminal image preview at higher verbosities
 
-  with TerminalImagePreview(wallpaper) as preview:
+  with TerminalImagePreview(wallpaper, padding=(1,1,2,1)) as preview:
     from time import sleep
-    sleep(0.05)
 
     if VERBOSE_DEBUG:
 
@@ -168,11 +169,14 @@ if VERBOSE_MEDIUM:  # Show in-terminal image preview at higher verbosities
         info()
 
     else:
+      preview.display_image()
+      sleep(0.2)
 
       print_palette_preview( base_colors=base_colors,
                              bold_colors=bold_colors,
                              highlight=highlight,
                              lowlight=lowlight )
+
 
     _input = sys.stdin.read(1)
     if _input in ["q", "\x1b"]: # If ESC or q is pressed, exit failure

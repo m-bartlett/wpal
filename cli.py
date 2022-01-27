@@ -20,7 +20,7 @@ parser.add_argument(
   "--wallpaper-picker",
   "-W",
   type=str,
-  default="",
+  default=False,
   nargs='?',
   help="launch argument executable as a process and wait for it to exit before generating a wallpaper (intended for interactive wallpaper selectors)"
 )
@@ -125,6 +125,8 @@ for color_name in ANSI_color_names:
 
 
 args = parser.parse_args()
+
+
 
 # CLI flag values take priority over configuration from files
 file_config = read_configuration_from_file()
