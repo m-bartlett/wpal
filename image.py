@@ -248,18 +248,33 @@ def rgb_palette_to_hsv_palette(palette):
   return np.apply_along_axis(lambda c: rgb_to_hsv(*c), 1, palette)
 
 
+def hsv_palette_to_rgb_palette(hsv_palette):
+  return np.apply_along_axis(lambda c: hsv_to_rgb(*c), 1, hsv_palette).astype(np.uint8)
+
+
 def get_most_saturated_color_index(hsv_palette):
-  # saturation_distances = np.sqrt( (hsv_palette[1:-1,1] - 1.0 )**2 + ((hsv_palette[1:-1,2]/255) - 1.0 )**2 )
-  saturation_distances = (hsv_palette[1:-1,1] - 1.0)**2
+  # saturation_distances = (hsv_palette[1:-1,1] - 1.0)**2
   # saturation_distances = (hsv_palette[1:-1,2] - 255)**2
+  saturation_distances = np.sqrt(
+    (1.0 - hsv_palette[1:-1,1])**2 + ((255 - hsv_palette[1:-1,2]) / 255.0 )**2
+  )
   return saturation_distances.argmin()+1
+
+  # grey = np.array([0,0,64])
+  # saturation_distances = np.sqrt(((hsv_palette[1:-1] - grey)**2).sum(axis=1))
+  # return saturation_distances.argmax()+1
 
 
 def rebalance_palette(hsv_palette, value, saturation):
+  """
+  Prevent palette values from exceeding defined value range
+
+  i.e.
+    0=hue, 1=saturation, 2=value
+    hue<=360, saturation<=1, value<=255
+  """
   palette = hsv_palette.copy()
 
-  # 0=hue, 1=saturation, 2=value
-  # hue<=360, saturation<=1, value<=255
   palette[:,2] = np.minimum( palette[:,2] * value,
                              np.repeat(255,palette.shape[0]) )
 
@@ -267,9 +282,8 @@ def rebalance_palette(hsv_palette, value, saturation):
   palette[1:-1,1] = np.minimum( palette[1:-1,1] * saturation,
                                 np.repeat(1.0,palette.shape[0]-2) )
 
-  palette = np.apply_along_axis(lambda c: hsv_to_rgb(*c), 1, palette).astype(np.uint8)
 
-  return palette
+  return hsv_palette_to_rgb_palette(palette)
 
 
 def constrain_contrast_between_foreground_and_background_colors(

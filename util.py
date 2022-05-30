@@ -25,8 +25,19 @@ def get_terminal_size():
 
 
 def popen(cmdline, stdin=None, **kwargs):
-    if isinstance(stdin, str): stdin=stdin.encode()
+    if isinstance(stdin, str):
+        stdin=stdin.encode()
     return subprocess.run( list(map(os.path.expanduser, shlex.split(cmdline))),
                            input=stdin,
                            capture_output=True,
                            **kwargs )
+
+def popen_blocking(cmdline, stdin=None, **kwargs):
+    exit_code = subprocess.call( list(map(os.path.expanduser, shlex.split(cmdline))),
+                                 stdin=stdin,
+                                 # shell=True,
+                                 text='utf-8',
+                                 **kwargs )
+    if exit_code != 0:
+        info(f"WARNING: 'cmdline' returned non-zero exit code")
+    return exit_code

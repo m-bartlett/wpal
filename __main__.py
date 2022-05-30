@@ -10,7 +10,7 @@ import os
 from core import generate_ANSI_palette_from_pixels
 from image import *
 from cli import args
-from util import EXECUTABLE_DIRECTORY
+from util import EXECUTABLE_DIRECTORY, popen, popen_blocking
 
 VERBOSE_DEBUG  = args.verbose > 3
 VERBOSE_HIGH   = VERBOSE_DEBUG or args.verbose > 2
@@ -75,7 +75,7 @@ if not args.pure:
 wallpaper = Image.open(wallpaper_path).convert('RGB')
 
 if args.resize > 0:
-  wallpaper.thumbnail((args.resize, args.resize), resample=Image.LANCZOS)
+  wallpaper.thumbnail((args.resize, args.resize), resample=Image.Resampling.LANCZOS)
 if args.blur_radius:
   wallpaper = wallpaper.filter(ImageFilter.BoxBlur(radius=args.blur_radius))
 
@@ -83,19 +83,17 @@ rgb_pixels = np.array(wallpaper, dtype=int)[:,:,:3]
 rgb_pixels = rgb_pixels.reshape( rgb_pixels.shape[0] * rgb_pixels.shape[1],
                                  rgb_pixels.shape[2] )
 
+color_overwrites = { color_index: color
+                     for color_index in range(0,16)
+                     if (color := args.__getattribute__(str(color_index))) is not None }
 
-palette_result = (
-
-    generate_ANSI_palette_from_pixels(
-      rgb_pixels            = rgb_pixels,
-      kmeans_initial_colors = kmeans_initial_colors,
-      kmeans_iterations     = args.iterations,
-      minimum_contrast      = args.minimum_contrast,
-      light_palette         = args.light,
-      verbose               = VERBOSE_HIGH
-    )
-
-)
+palette_result = generate_ANSI_palette_from_pixels(rgb_pixels            = rgb_pixels,
+                                                   kmeans_initial_colors = kmeans_initial_colors,
+                                                   kmeans_iterations     = args.iterations,
+                                                   minimum_contrast      = args.minimum_contrast,
+                                                   light_palette         = args.light,
+                                                   overwrites            = color_overwrites,
+                                                   verbose               = VERBOSE_HIGH)
 
 base_colors, bold_colors = palette_result["base_colors"], palette_result["bold_colors"]
 highlight,   lowlight    = palette_result["highlight"],   palette_result["lowlight"]
@@ -139,6 +137,7 @@ Xresource_colors = {
 # Convert all RGB tuples to hexidecimal strings
 Xresource_colors = { color: rgb2hex(rgb) for color, rgb in Xresource_colors.items() }
 Xresource_colors["themestyle"] = 'light' if args.light else 'dark'
+Xresource_colors["backgroundalpha"] = f"#80{Xresource_colors['background'][1:]}"
 
 
 if args.save:
@@ -158,15 +157,15 @@ if VERBOSE_MEDIUM:  # Show in-terminal image preview at higher verbosities
   with TerminalImagePreview(wallpaper, padding=(1,1,2,1)) as preview:
     from time import sleep
 
-    if VERBOSE_DEBUG:
+    if VERBOSE_DEBUG: ...
 
-      for palette_batch in [ [kmeans_initial_colors],
-                             [base_colors,bold_colors]+[[highlight, lowlight]],
-                             list(palettes),
-                             [sorted_base_colors, sorted_bold_colors] ]:
-        for palette in palette_batch:
-          info(palette_as_colorized_hexcodes(palette, separator=" "))
-        info()
+      # for palette_batch in [ [kmeans_initial_colors],
+      #                        [base_colors,bold_colors]+[[highlight, lowlight]],
+      #                        list(palettes),
+      #                        [sorted_base_colors, sorted_bold_colors] ]:
+      #   for palette in palette_batch:
+      #     info(palette_as_colorized_hexcodes(palette, separator=" "))
+      #   info()
 
     else:
       preview.display_image()
@@ -211,11 +210,19 @@ if args.hooks is not None:
 
 
   # Execute all hooks concurrently in their own thread
-  from concurrent.futures import ThreadPoolExecutor
+  from concurrent.futures import ThreadPoolExecutor, as_completed
+
+
+  if VERBOSE_HIGH:
+    import functools
+
+    def verbosify(f):
+      def wrapper(hook):
+        info(f"Executed {hook}")
+        return f(hook)
+      return wrapper
+
+    popen_blocking = verbosify(popen_blocking)
+
   with ThreadPoolExecutor() as executor:
-    processes = list(executor.map(popen, hooks))
-    for p in processes:
-      if VERBOSE_HIGH:
-        info(f"Executed {p.args[0]}")
-      if p.returncode != 0:
-        info(f"WARNING: {p.args[0]} returned nonzero exit code.")
+    exit_codes = executor.map(popen_blocking, hooks)

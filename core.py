@@ -8,6 +8,7 @@ def generate_ANSI_palette_from_pixels( *,
                                        kmeans_iterations = 3,
                                        minimum_contrast = 0,
                                        light_palette = False,
+                                       overwrites = {},
                                        value = 1.0,
                                        value_delta = 0.5,  # value as in HSV
                                        base_saturation = 1.0,
@@ -40,6 +41,11 @@ def generate_ANSI_palette_from_pixels( *,
 
 	if light_palette:
 	  initial_palette[[0,7]] = initial_palette[[7,0]] # Swap white and black, i.e. fg with bg
+	# else:
+		# initial_palette[0] += 0x44
+		# initial_palette[0] /= 3
+		# initial_palette[0]*=0
+		# initial_palette[0]+=0x25
 
 
 	if minimum_contrast:
@@ -73,9 +79,18 @@ def generate_ANSI_palette_from_pixels( *,
 	base_colors = rebalance_palette(hsv_palette, base_value, base_saturation)
 	bold_colors = rebalance_palette(hsv_palette, bold_value, bold_saturation)
 
+	for color_index in range(0,8):
+		if (color := overwrites.get(color_index)):
+			base_colors[color_index] = hex2rgb(color)
+
+	for color_index in range(8,16):
+		if (color := overwrites.get(color_index)):
+			bold_colors[color_index&7] = hex2rgb(color)
+
 	highlight_index = get_most_saturated_color_index(hsv_palette)
 	highlight = bold_colors[highlight_index]
 	lowlight  = base_colors[highlight_index]
+
 
 
 	# return (base_colors, bold_colors, indices_sorted_by_neighbor_quantity)

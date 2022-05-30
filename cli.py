@@ -117,11 +117,15 @@ parser.add_argument(
 )
 
 for color_name in ANSI_color_names:
-  parser.add_argument(
-    f"--{color_name}",
-    type=str,
-    help=f"specify the kmeans initial cluster color representing {color_name}"
-  )
+  parser.add_argument(f"--{color_name}",
+                      type=str,
+                      help=f"specify the kmeans initial cluster color representing {color_name}")
+
+for color_index in range(0,16):
+  parser.add_argument(f"-{color_index}",
+                      type=str,
+                      dest=str(color_index),
+                      help=f"Override ANSI color {color_index} with a given color")
 
 
 args = parser.parse_args()
