@@ -7,10 +7,10 @@ import shlex
 import pathlib
 import os
 
-from core import generate_ANSI_palette_from_pixels
-from image import *
-from cli import args
-from util import EXECUTABLE_DIRECTORY, popen, popen_blocking
+from .core import generate_ANSI_palette_from_pixels
+from .image import *
+from .cli import args
+from .util import EXECUTABLE_DIRECTORY, popen, popen_blocking
 
 VERBOSE_DEBUG  = args.verbose > 3
 VERBOSE_HIGH   = VERBOSE_DEBUG or args.verbose > 2
@@ -42,12 +42,13 @@ if args.wallpaper_picker is not False:
 
 if args.file:
   wallpaper_path = args.file
+elif getattr(args, 'wallpaper_path', None) is None:
+  fail("Neither wallpaper path nor wallpaper chooser were provided.")
+  raise AttributeError("A wallpaper path was not provided")
 elif args.wallpaper_path:
   wallpaper_path = args.wallpaper_path
 elif args.wallpaper_path_command:
   wallpaper_path = popen(args.wallpaper_path_command).stdout.decode().strip()
-else:
-  raise RuntimeError("A wallpaper path was not provided")
 
 if VERBOSE_MEDIUM:  info(f"\nUsing wallpaper: {wallpaper_path}")
 
@@ -213,9 +214,7 @@ if args.hooks is not None:
   from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
-  if VERBOSE_HIGH:
-    import functools
-
+  if VERBOSE_HIGH:        # TO-DO: This is bad and you should feel bad
     def verbosify(f):
       def wrapper(hook):
         info(f"Executed {hook}")

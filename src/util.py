@@ -13,6 +13,11 @@ def info(*args, **kwargs):
     print(*args, **kwargs)
 
 
+def fail(s, **kwargs):
+    info(f'\033[31m{s}\033[0m', **kwargs)
+    sys.exit(1)
+
+
 def get_terminal_size():
     for fd in 0,1,2:
         try: terminal_size = struct.unpack( 'hh',

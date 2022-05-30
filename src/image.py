@@ -3,10 +3,10 @@ import contextlib
 import tempfile
 import termios
 import re
-from util import *
 from PIL import Image, ImageFilter
 from colorsys import hsv_to_rgb, rgb_to_hsv
 from hashlib import sha256
+from .util import *
 
 
 np.set_printoptions(precision=3, suppress=True)

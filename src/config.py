@@ -1,7 +1,7 @@
 import configparser
 import os
 from pathlib import Path
-from util import EXECUTABLE_DIRECTORY, EXECUTABLE_NAME
+from .util import EXECUTABLE_DIRECTORY, EXECUTABLE_NAME
 
 config_parser = configparser.ConfigParser()
 

@@ -1,6 +1,6 @@
 import argparse
-from image import ANSI_color_names
-from config import read_configuration_from_file
+from .image import ANSI_color_names
+from .config import read_configuration_from_file
 
 
 # Configuration priority:

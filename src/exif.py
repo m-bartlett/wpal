@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import json
-from util import popen, EXECUTABLE_NAME
+from .util import popen, EXECUTABLE_NAME
 
 METADATA_PAYLOAD_MAGIC = f"{EXECUTABLE_NAME} "
 

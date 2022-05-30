@@ -1,5 +1,5 @@
 import tempfile
-from util import popen
+from .util import popen
 
 def xrdb_merge(Xresource_colors):
   with tempfile.NamedTemporaryFile(mode='w', delete=True) as temp:

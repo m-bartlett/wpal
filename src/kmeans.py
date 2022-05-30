@@ -1,4 +1,4 @@
-from image import np
+from .image import np
 
 def kmeans(initial_cluster_centers, pixels, iterations=3):
 
