@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+# if [[ "$themestyle" == 'dark' ]]; then
+# else
+#   icon_theme=Papirus
+# fi
+xrdb -merge <(echo -e "pavol-dunst.primaryColor: $foreground\npavol-dunst.secondaryColor: $midground")

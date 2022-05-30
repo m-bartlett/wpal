@@ -9,4 +9,4 @@
 # EOF
 # )
 
-kill -USR1 $(pidof st)
+kill -USR2 $(pidof st)

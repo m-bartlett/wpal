@@ -17,12 +17,35 @@
 #   -ch "$highlight"  \
 #   & disown
 
-pkill dunst
-&>/dev/null dunst -config <(
+adjust() {
+  local color=$1 percent=$2
+  printf '#'
+  for i in 1 3 5; do
+    local hex=0x${color:$i:2}
+    printf '%02x'  $(( ($hex * $percent)/100 ))
+  done
+}
+
+adjustment_delta=25
+
+if [[ "$themestyle" == 'dark' ]]; then
+  adjustment=$(( 100 + $adjustment_delta ))
+else
+  adjustment=$(( 100 - $adjustment_delta ))
+fi
+
+background_lighter=$(adjust $background $adjustment)
+
+config_body="$(
   sed \
-    -e "s/\( *frame_color *= *\).*$/\1\"$highlight\"/" \
-    -e  "s/\( *highlight *= *\).*$/\1\"$highlight\"/" \
-    -e "s/\( *background *= *\).*$/\1\"$background\"/" \
+    -e "s/\( *frame_color *= *\).*$/\1\"$background_lighter\"/" \
+    -e "s/\( *highlight *= *\).*$/\1\"$highlight\"/" \
+    -e "s/\( *background *= *\).*$/\1\"${background}\"/" \
     -e "s/\( *foreground *= *\).*$/\1\"$foreground\"/" \
+    -e "s/\( *foreground *= *\).*$/\1\"$foreground\"/" \
+    -e "s/\( *separator_color *= *\).*$/\1\"$midground\"/" \
     -- $HOME/.config/dunst/dunstrc
-  ) &
+)"
+
+pkill dunst
+dunst -config <(echo "$config_body") &>/dev/null & disown

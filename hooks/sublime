@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-cat <<EOF > $HOME/.config/sublime-text/Packages/User/xresources.sublime-color-scheme
+
+# cat <<EOF > $HOME/.config/sublime-text/Packages/User/xresources.sublime-color-scheme
+cat <<EOF > "$HOME/.config/sublime-text/Packages/Color Scheme - Default/xresources.sublime-color-scheme"
 {
     "name": "XResources",
     "author": "M B",
@@ -24,8 +26,8 @@ cat <<EOF > $HOME/.config/sublime-text/Packages/User/xresources.sublime-color-sc
         "gutter_foreground"             : "$midground",
         "highlight" /*inactive find*/   : "$lowlight",
         "inactive_selection" /*bg*/     : "$color8",
-        "selection_foreground"          : "$highlight",
-        "inactive_selection_foreground" : "$lowlight",
+        "selection_foreground"          : "$lowlight",
+        "inactive_selection_foreground" : "$midground",
         "line_diff_added"               : "$color10",
         "line_diff_deleted"             : "$color9",
         "line_diff_modified"            : "$color12",
@@ -94,6 +96,10 @@ cat <<EOF > $HOME/.config/sublime-text/Packages/User/xresources.sublime-color-sc
          ,"font_style": "glow"
         },
         {
+          "name": "Constant", "scope": "variable.other.constant",
+          "foreground": "$color3S"
+        },
+        {
           "name": "Entity name", "scope": "entity.name.section, entity.name.tag, entity.name.label",
           "foreground": "$highlight"
         },
@@ -137,8 +143,9 @@ cat <<EOF > $HOME/.config/sublime-text/Packages/User/xresources.sublime-color-sc
         },
         {
           "name": "Invalid", "scope": "invalid",
-          "foreground": "$color15",
-          "background": "$color1S"
+          "foreground": "#FF000080",
+          "font_style": "squiggly_underline"
+          // "background": "$color1S"
         },
         {
           "name": "Invalid deprecated", "scope": "invalid.deprecated",
@@ -308,6 +315,16 @@ cat <<EOF > $HOME/.config/sublime-text/Packages/User/xresources.sublime-color-sc
         {
           "name": "Python import",
           "scope": "source.python meta.statement.import.python meta.qualified-name.python meta.generic-name.python",
+          "foreground": "$color1S"
+        },
+        {
+          "name": "Python from import",
+          "scope": "source.python meta.statement.import.python meta.import-source.python meta.import-path.python meta.import-name.python",
+          "foreground": "$color1S"
+        },
+        {
+          "name": "Python from x import y",
+          "scope": "source.python meta.statement.import.python meta.generic-name.python",
           "foreground": "$color1S"
         },
         {

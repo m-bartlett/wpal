@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+# pkill compton
+# compton_themed &>/dev/null
+# pkill -SIGUSR1 compton
+
+dim=50
+
+if [[ "$themestyle" == 'dark' ]]; then
+  shadow=$background
+else
+  shadow=$foreground
+fi
+
+read red green blue <<< $(
+  for i in 1 3 5; do
+    python -c "print((0x${shadow:$i:2}*$dim)/25000.0,end=' ')"
+  done
+)
+
+pkill picom
+sleep 0.1
+
+# -C: Avoid drawing shadows on dock/panel windows.
+picom -C \
+--shadow-red   $red \
+--shadow-green $green \
+--shadow-blue  $blue \
+& disown
