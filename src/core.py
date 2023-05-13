@@ -2,18 +2,18 @@ from .image import *
 from .kmeans import kmeans
 
 
-def generate_ANSI_palette_from_pixels( *,
-                                       rgb_pixels,
-                                       kmeans_initial_colors,
-                                       kmeans_iterations = 3,
-                                       minimum_contrast = 0,
-                                       light_palette = False,
-                                       overwrites = {},
-                                       value = 1.0,
-                                       value_delta = 0.5,  # value as in HSV
-                                       base_saturation = 1.0,
-                                       bold_saturation = 1.1,
-                                       verbose = False ):
+def generate_ANSI_palette_from_pixels(*,
+                                      rgb_pixels,
+                                      kmeans_initial_colors,
+                                      kmeans_iterations = 3,
+                                      minimum_contrast = 0,
+                                      light_palette = False,
+                                      overwrites = {},
+                                      value = 1.0,
+                                      value_delta = 0.5,  # value as in HSV
+                                      base_saturation = 1.0,
+                                      bold_saturation = 1.1,
+                                      verbose = False):
 
   rgb_pixels = filter_colors_in_ellipsoid_volume(
     rgb_pixels,

@@ -1,2 +1,4 @@
 #!/usr/bin/env bash
+#### TO-DO Polybar's alpha hex placement is dumb, it should be the exception and not the rule
+# export backgroundalphapolybar="#${backgroundalpha:3}${backgroundalpha:1:2}"
 $HOME/.config/polybar/start

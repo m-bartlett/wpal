@@ -14,6 +14,12 @@
 
 [ ] terminal preview frame fix
 
+    -> run k-means with k=3 to get the most prominent 3 colors to use as a basis
+    -> interpolate a helical/circular spline through the points in HSV space
+    -> each discrete hue 0-360 has an intersection point with the curve
+    -> determine which of the 6 primary colors the minimal set of hull points are closest to
+    -> for remaining primary colors, pull the value of the curve that intersects their hue
+
 - ~~main -> __main__ and update symlink~~
 - ~~exif only stores base and bold colors, re-derives 5-palette~~ this loses information about cluster-sorting of colors
 [x] main -> core.main() and then __main__ imports core.main ?

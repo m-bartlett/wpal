@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-exit 0
 
 if [[ "$themestyle" == "dark" ]]; then
   gtk_dark_theme_config='gtk-application-prefer-dark-theme = true'
@@ -35,4 +34,6 @@ cat << EOF > $HOME/.themes/FlatColor/colors3
 @define-color tooltip_fg_color $foreground;
 EOF
 
-gtkrc-reload
+#gtkrc-reload
+killall xsettingsd
+timeout 1 xsettingsd || :

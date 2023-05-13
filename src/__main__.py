@@ -133,6 +133,7 @@ Xresource_colors = {
   "foreground": ansi_palette[15],
   "highlight":  highlight,
   "lowlight":   lowlight,
+  "cursorfg":   highlight,
 }
 
 # Convert all RGB tuples to hexidecimal strings

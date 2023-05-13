@@ -44,5 +44,5 @@ def popen_blocking(cmdline, stdin=None, **kwargs):
                                  text='utf-8',
                                  **kwargs )
     if exit_code != 0:
-        info(f"WARNING: 'cmdline' returned non-zero exit code")
+        info(f"WARNING: '{cmdline}' returned non-zero exit code")
     return exit_code
